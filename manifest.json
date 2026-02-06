@@ -1,7 +1,7 @@
 {
   "id": "obsidian-excel-automation",
   "name": "Excel Automation",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "minAppVersion": "0.16.0",
   "description": "Generate Excel reports from Obsidian markdown files. Multi-language support (EN/KO/JA), customizable parsing rules, 4 report types with professional formatting. v3: Executive Summary dashboard, enhanced task detection with Dataview fields, regex caching for performance.",
   "author": "Jamin Park",
