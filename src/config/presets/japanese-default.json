@@ -1,0 +1,175 @@
+{
+  "id": "japanese-default",
+  "name": "日本語デフォルト",
+  "description": "Japanese language preset with standard parsing rules",
+  "version": "2.0",
+  "locale": "ja",
+  "localeStrings": {
+    "reports": {
+      "weekly": "週次レポート",
+      "quarterly": "四半期レポート",
+      "feature": "機能レポート",
+      "blocker": "ブロッカーレポート"
+    },
+    "sheets": {
+      "weeklySummary": "週次サマリー",
+      "roadmapProgress": "ロードマップ進捗",
+      "taskDetails": "タスク詳細",
+      "blockerTracking": "ブロッカー追跡",
+      "coordination": "調整事項",
+      "milestones": "マイルストーン",
+      "playbookProgress": "プレイブック進捗",
+      "quarterlyOverview": "四半期概要",
+      "p0Tasks": "P0タスク",
+      "p1Tasks": "P1タスク",
+      "progressAnalytics": "進捗分析",
+      "allFeatures": "全機能",
+      "byPriority": "優先度別",
+      "byCycle": "サイクル別",
+      "activeBlockers": "アクティブブロッカー",
+      "blockerHistory": "ブロッカー履歴"
+    },
+    "columns": {
+      "id": "ID",
+      "name": "タスク名",
+      "owner": "担当者",
+      "status": "ステータス",
+      "deadline": "期限",
+      "priority": "優先度",
+      "description": "説明",
+      "category": "カテゴリ",
+      "content": "内容",
+      "target": "目標",
+      "current": "現在",
+      "percentage": "進捗率",
+      "risk": "リスク",
+      "date": "日付",
+      "cycle": "サイクル",
+      "impact": "影響",
+      "resolution": "解決策",
+      "quarter": "四半期",
+      "week": "週"
+    },
+    "kpi": {
+      "totalTasks": "全タスク",
+      "completed": "完了",
+      "p0CompletionRate": "P0完了率",
+      "blockers": "ブロッカー",
+      "activeBlockers": "アクティブブロッカー",
+      "resolvedBlockers": "解決済みブロッカー",
+      "totalFeatures": "全機能",
+      "inProgress": "進行中",
+      "pending": "保留"
+    },
+    "status": {
+      "completed": "完了",
+      "inProgress": "進行中",
+      "pending": "保留",
+      "resolved": "解決済み",
+      "unresolved": "未解決"
+    },
+    "priority": {
+      "p0": "P0",
+      "p1": "P1",
+      "p2": "P2",
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
+    "ui": {
+      "generateReport": "レポート生成",
+      "settings": "設定",
+      "language": "言語",
+      "parsingRules": "パースルール",
+      "reportSchema": "レポートスキーマ",
+      "presets": "プリセット",
+      "importExport": "インポート/エクスポート",
+      "reset": "リセット",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "apply": "適用"
+    },
+    "messages": {
+      "reportGenerated": "レポートが生成されました",
+      "reportFailed": "レポート生成に失敗しました",
+      "settingsSaved": "設定が保存されました",
+      "presetApplied": "プリセットが適用されました",
+      "validationError": "バリデーションエラー",
+      "loading": "読み込み中...",
+      "noData": "データがありません"
+    }
+  },
+  "parsing": {
+    "task": {
+      "checkboxPattern": "^\\s*[-*]\\s*\\[([ xX])\\]\\s*(.+)$",
+      "priorityIndicators": {
+        "p0": ["[P0]", "🔴", "【P0】", "❗"],
+        "p1": ["[P1]", "🟡", "【P1】", "⚠️"],
+        "p2": ["[P2]", "🟢", "【P2】", "ℹ️"]
+      },
+      "statusIndicators": {
+        "completed": ["✅", "完了", "[x]", "[X]", "Done"],
+        "pending": ["⏳", "保留", "[ ]", "Pending"],
+        "inProgress": ["🔄", "進行中", "In Progress"]
+      },
+      "dueDatePatterns": [
+        "期限[：:]\\s*(.+?)(?:\\s|$)",
+        "Due[：:]\\s*(.+?)(?:\\s|$)",
+        "~(\\d{1,2}/\\d{1,2})",
+        "@(\\d{4}-\\d{2}-\\d{2})"
+      ],
+      "ownerPatterns": [
+        "担当[：:]\\s*(.+?)(?:\\s|$)",
+        "@(\\w+)",
+        "Owner[：:]\\s*(.+?)(?:\\s|$)"
+      ]
+    },
+    "feature": {
+      "idPattern": "^(F\\d+|[A-Z]\\d+)\\s*[-:：]?\\s*",
+      "fields": {
+        "status": ["ステータス", "status", "状態"],
+        "priority": ["優先度", "priority", "重要度"],
+        "cycle": ["サイクル", "cycle", "フェーズ"],
+        "owner": ["担当者", "owner", "責任者"]
+      },
+      "statusMapping": {
+        "completed": ["完了", "Completed", "Done", "✅"],
+        "inProgress": ["進行中", "In Progress", "開発中", "🔄"],
+        "pending": ["保留", "Pending", "未着手", "⏳"]
+      }
+    },
+    "blocker": {
+      "resolvedIndicators": ["✅", "解決済み", "Resolved", "クローズ"],
+      "unresolvedIndicators": ["❌", "未解決", "Unresolved", "オープン"],
+      "inProgressIndicators": ["🔄", "対応中", "In Progress", "調査中"],
+      "prioritySections": {
+        "high": ["高優先度", "高", "High Priority", "クリティカル"],
+        "medium": ["中優先度", "中", "Medium Priority", "通常"],
+        "low": ["低優先度", "低", "Low Priority", "軽微"]
+      },
+      "impactPatterns": [
+        "影響[：:]\\s*(.+?)(?:\\n|$)",
+        "Impact[：:]\\s*(.+?)(?:\\n|$)"
+      ]
+    },
+    "table": {
+      "coordinationHeaders": ["調整事項", "Coordination", "協議"],
+      "milestoneHeaders": ["マイルストーン", "Milestone", "目標"],
+      "playbookHeaders": ["プレイブック", "Playbook", "手順"],
+      "columnAliases": {
+        "category": ["カテゴリ", "分類", "Category", "区分"],
+        "content": ["内容", "詳細", "Content", "説明"],
+        "priority": ["優先度", "Priority", "重要度"],
+        "owner": ["担当者", "Owner", "責任者"],
+        "deadline": ["期限", "Deadline", "目標日"],
+        "status": ["ステータス", "Status", "状態"],
+        "date": ["日付", "Date", "日時"],
+        "name": ["名前", "Name", "タスク名"],
+        "target": ["目標", "Target", "ゴール"],
+        "current": ["現在", "Current", "現状"],
+        "percentage": ["進捗率", "Percentage", "完了率"],
+        "risk": ["リスク", "Risk", "懸念"]
+      }
+    }
+  }
+}

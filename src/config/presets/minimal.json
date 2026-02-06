@@ -1,0 +1,171 @@
+{
+  "id": "minimal",
+  "name": "Minimal",
+  "description": "Minimal configuration with essential features only. English labels with simplified parsing rules.",
+  "version": "2.0",
+  "locale": "en",
+  "localeStrings": {
+    "reports": {
+      "weekly": "Weekly",
+      "quarterly": "Quarterly",
+      "feature": "Features",
+      "blocker": "Blockers"
+    },
+    "sheets": {
+      "weeklySummary": "Summary",
+      "roadmapProgress": "Roadmap",
+      "taskDetails": "Tasks",
+      "blockerTracking": "Blockers",
+      "coordination": "Coordination",
+      "milestones": "Milestones",
+      "playbookProgress": "Playbook",
+      "quarterlyOverview": "Overview",
+      "p0Tasks": "P0",
+      "p1Tasks": "P1",
+      "progressAnalytics": "Analytics",
+      "allFeatures": "All",
+      "byPriority": "By Priority",
+      "byCycle": "By Cycle",
+      "activeBlockers": "Active",
+      "blockerHistory": "History"
+    },
+    "columns": {
+      "id": "ID",
+      "name": "Name",
+      "owner": "Owner",
+      "status": "Status",
+      "deadline": "Due",
+      "priority": "Pri",
+      "description": "Desc",
+      "category": "Cat",
+      "content": "Content",
+      "target": "Target",
+      "current": "Current",
+      "percentage": "%",
+      "risk": "Risk",
+      "date": "Date",
+      "cycle": "Cycle",
+      "impact": "Impact",
+      "resolution": "Fix",
+      "quarter": "Q",
+      "week": "W"
+    },
+    "kpi": {
+      "totalTasks": "Total",
+      "completed": "Done",
+      "p0CompletionRate": "P0 Rate",
+      "blockers": "Blockers",
+      "activeBlockers": "Active",
+      "resolvedBlockers": "Resolved",
+      "totalFeatures": "Features",
+      "inProgress": "WIP",
+      "pending": "Pending"
+    },
+    "status": {
+      "completed": "Done",
+      "inProgress": "WIP",
+      "pending": "Pending",
+      "resolved": "Fixed",
+      "unresolved": "Open"
+    },
+    "priority": {
+      "p0": "P0",
+      "p1": "P1",
+      "p2": "P2",
+      "high": "High",
+      "medium": "Med",
+      "low": "Low"
+    },
+    "ui": {
+      "generateReport": "Generate",
+      "settings": "Settings",
+      "language": "Language",
+      "parsingRules": "Parsing",
+      "reportSchema": "Schema",
+      "presets": "Presets",
+      "importExport": "Import/Export",
+      "reset": "Reset",
+      "save": "Save",
+      "cancel": "Cancel",
+      "apply": "Apply"
+    },
+    "messages": {
+      "reportGenerated": "Report generated",
+      "reportFailed": "Generation failed",
+      "settingsSaved": "Saved",
+      "presetApplied": "Applied",
+      "validationError": "Error",
+      "loading": "Loading...",
+      "noData": "No data"
+    }
+  },
+  "parsing": {
+    "task": {
+      "checkboxPattern": "^\\s*[-*]\\s*\\[([ xX])\\]\\s*(.+)$",
+      "priorityIndicators": {
+        "p0": ["[P0]", "P0"],
+        "p1": ["[P1]", "P1"],
+        "p2": ["[P2]", "P2"]
+      },
+      "statusIndicators": {
+        "completed": ["[x]", "[X]", "Done"],
+        "pending": ["[ ]", "Pending"],
+        "inProgress": ["WIP", "In Progress"]
+      },
+      "dueDatePatterns": [
+        "Due:\\s*(.+?)(?:\\s|$)",
+        "@(\\d{4}-\\d{2}-\\d{2})"
+      ],
+      "ownerPatterns": [
+        "@(\\w+)",
+        "Owner:\\s*(.+?)(?:\\s|$)"
+      ]
+    },
+    "feature": {
+      "idPattern": "^(F\\d+)\\s*[-:]?\\s*",
+      "fields": {
+        "status": ["status", "Status"],
+        "priority": ["priority", "Priority"],
+        "cycle": ["cycle", "Cycle"],
+        "owner": ["owner", "Owner"]
+      },
+      "statusMapping": {
+        "completed": ["Done", "Completed"],
+        "inProgress": ["WIP", "In Progress"],
+        "pending": ["Pending", "Todo"]
+      }
+    },
+    "blocker": {
+      "resolvedIndicators": ["Resolved", "Fixed", "Done"],
+      "unresolvedIndicators": ["Open", "Unresolved"],
+      "inProgressIndicators": ["WIP", "In Progress"],
+      "prioritySections": {
+        "high": ["High", "Critical"],
+        "medium": ["Medium", "Normal"],
+        "low": ["Low", "Minor"]
+      },
+      "impactPatterns": [
+        "Impact:\\s*(.+?)(?:\\n|$)"
+      ]
+    },
+    "table": {
+      "coordinationHeaders": ["Coordination"],
+      "milestoneHeaders": ["Milestone"],
+      "playbookHeaders": ["Playbook"],
+      "columnAliases": {
+        "category": ["Category", "Cat"],
+        "content": ["Content", "Details"],
+        "priority": ["Priority", "Pri"],
+        "owner": ["Owner"],
+        "deadline": ["Due", "Deadline"],
+        "status": ["Status"],
+        "date": ["Date"],
+        "name": ["Name", "Task"],
+        "target": ["Target", "Goal"],
+        "current": ["Current"],
+        "percentage": ["%", "Progress"],
+        "risk": ["Risk"]
+      }
+    }
+  }
+}

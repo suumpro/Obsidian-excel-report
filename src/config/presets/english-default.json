@@ -1,0 +1,266 @@
+{
+  "version": "2.0",
+  "locale": "en",
+  "localeStrings": {
+    "reports": {
+      "weekly": "Weekly Report",
+      "quarterly": "Quarterly Report",
+      "feature": "Feature Report",
+      "blocker": "Blocker Report"
+    },
+    "sheets": {
+      "weeklySummary": "Weekly Summary",
+      "roadmapProgress": "Roadmap Progress",
+      "taskDetails": "Task Details",
+      "blockerTracking": "Blocker Tracking",
+      "coordination": "Coordination",
+      "milestones": "Milestones",
+      "playbookProgress": "Playbook Progress",
+      "quarterlyOverview": "Quarterly Overview",
+      "p0Tasks": "P0 Critical Tasks",
+      "p1Tasks": "P1 High Priority",
+      "progressAnalytics": "Progress Analytics",
+      "allFeatures": "All Features",
+      "byPriority": "By Priority",
+      "byCycle": "By Cycle",
+      "activeBlockers": "Active Blockers",
+      "blockerHistory": "Blocker History"
+    },
+    "columns": {
+      "id": "ID",
+      "name": "Name",
+      "owner": "Owner",
+      "status": "Status",
+      "deadline": "Deadline",
+      "priority": "Priority",
+      "description": "Description",
+      "category": "Category",
+      "content": "Content",
+      "target": "Target",
+      "current": "Current",
+      "percentage": "Progress %",
+      "risk": "Risk",
+      "date": "Date",
+      "cycle": "Cycle",
+      "impact": "Impact",
+      "resolution": "Resolution",
+      "quarter": "Quarter",
+      "week": "Week"
+    },
+    "kpi": {
+      "totalTasks": "Total Tasks",
+      "completed": "Completed",
+      "p0CompletionRate": "P0 Completion Rate",
+      "blockers": "Blockers",
+      "activeBlockers": "Active Blockers",
+      "resolvedBlockers": "Resolved Blockers",
+      "totalFeatures": "Total Features",
+      "inProgress": "In Progress",
+      "pending": "Pending"
+    },
+    "status": {
+      "completed": "Completed",
+      "inProgress": "In Progress",
+      "pending": "Pending",
+      "resolved": "Resolved",
+      "unresolved": "Unresolved"
+    },
+    "priority": {
+      "p0": "P0",
+      "p1": "P1",
+      "p2": "P2",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "ui": {
+      "generateReport": "Generate Report",
+      "settings": "Settings",
+      "language": "Language",
+      "parsingRules": "Parsing Rules",
+      "reportSchema": "Report Schema",
+      "presets": "Presets",
+      "importExport": "Import/Export",
+      "reset": "Reset",
+      "save": "Save",
+      "cancel": "Cancel",
+      "apply": "Apply"
+    },
+    "messages": {
+      "reportGenerated": "Report generated successfully",
+      "reportFailed": "Report generation failed",
+      "settingsSaved": "Settings saved",
+      "presetApplied": "Preset applied",
+      "validationError": "Validation error",
+      "loading": "Loading...",
+      "noData": "No data available"
+    }
+  },
+  "parsing": {
+    "task": {
+      "checkboxPattern": "- \\[([ x])\\]",
+      "priorityIndicators": {
+        "p0": ["⏫", "#P0", "[P0]", "🔴", "critical", "urgent", "blocker"],
+        "p1": ["🔼", "#P1", "[P1]", "🟡", "high", "important"],
+        "p2": ["🔽", "#P2", "[P2]", "🟢", "low", "minor", "nice-to-have"]
+      },
+      "statusIndicators": {
+        "completed": ["[x]", "✅", "DONE", "done", "complete", "completed", "finished"],
+        "pending": ["[ ]", "⬜", "TODO", "todo", "pending", "not started"],
+        "inProgress": ["[/]", "🔄", "WIP", "wip", "in progress", "working", "started"]
+      },
+      "dueDatePatterns": [
+        "📅 (\\d{4}-\\d{2}-\\d{2})",
+        "@due\\((.*?)\\)",
+        "due[:\\s]*(\\d{4}-\\d{2}-\\d{2})",
+        "deadline[:\\s]*(\\d{4}-\\d{2}-\\d{2})"
+      ],
+      "ownerPatterns": [
+        "👤 (\\w+)",
+        "@(\\w+)",
+        "owner[:\\s]*(\\w+)",
+        "assignee[:\\s]*(\\w+)"
+      ]
+    },
+    "feature": {
+      "idPattern": "[A-Z]+-?\\d+",
+      "fields": {
+        "status": ["status", "Status", "state", "State"],
+        "priority": ["priority", "Priority", "importance"],
+        "cycle": ["cycle", "Cycle", "sprint", "Sprint", "iteration"],
+        "owner": ["owner", "Owner", "assignee", "Assignee"]
+      },
+      "statusMapping": {
+        "completed": ["Complete", "Completed", "Done", "Shipped", "Released", "Closed"],
+        "inProgress": ["In Progress", "WIP", "Active", "Development", "Working", "Started"],
+        "pending": ["Pending", "TODO", "Planned", "Backlog", "Not Started", "Open"]
+      }
+    },
+    "blocker": {
+      "resolvedIndicators": ["✅", "Resolved", "Fixed", "Closed", "Done"],
+      "unresolvedIndicators": ["⚠️", "Open", "Unresolved", "Active", "Blocking"],
+      "inProgressIndicators": ["🔄", "In Progress", "Working", "Investigating"],
+      "prioritySections": {
+        "high": ["High Priority", "Critical", "P0", "Urgent", "Blocker"],
+        "medium": ["Medium Priority", "P1", "Normal", "Important"],
+        "low": ["Low Priority", "P2", "Minor", "Nice to have"]
+      },
+      "impactPatterns": [
+        "Impact[:\\s]*(.*)",
+        "Affects[:\\s]*(.*)",
+        "Blocking[:\\s]*(.*)"
+      ]
+    },
+    "table": {
+      "coordinationHeaders": ["Category", "Content", "Topic", "Discussion", "Item"],
+      "milestoneHeaders": ["Milestone", "Date", "Target", "Deadline"],
+      "playbookHeaders": ["Item", "Target", "Goal", "Objective", "Metric"],
+      "columnAliases": {
+        "category": ["Category", "Type", "Group", "Section"],
+        "content": ["Content", "Description", "Details", "Notes"],
+        "priority": ["Priority", "Importance", "Urgency"],
+        "owner": ["Owner", "Assignee", "Responsible", "Lead"],
+        "deadline": ["Deadline", "Due", "Due Date", "Target Date"],
+        "status": ["Status", "State", "Progress"],
+        "date": ["Date", "When", "Scheduled"],
+        "name": ["Name", "Title", "Task", "Item"],
+        "target": ["Target", "Goal", "Objective"],
+        "current": ["Current", "Actual", "Progress"],
+        "percentage": ["Progress", "%", "Completion", "Percent"],
+        "risk": ["Risk", "Risks", "Blockers"]
+      }
+    }
+  },
+  "reports": {
+    "weekly": {
+      "enabled": true,
+      "filename": "Weekly_W{week}_{date}.xlsx",
+      "metadata": {
+        "author": "",
+        "title": "Weekly Report",
+        "subject": "Weekly Progress Report"
+      }
+    },
+    "quarterly": {
+      "enabled": true,
+      "filename": "Quarterly_Q{quarter}_{date}.xlsx",
+      "metadata": {
+        "author": "",
+        "title": "Quarterly Report",
+        "subject": "Quarterly Progress Report"
+      }
+    },
+    "feature": {
+      "enabled": true,
+      "filename": "Features_{date}.xlsx",
+      "metadata": {
+        "author": "",
+        "title": "Feature Report",
+        "subject": "Feature Status Report"
+      }
+    },
+    "blocker": {
+      "enabled": true,
+      "filename": "Blockers_{date}.xlsx",
+      "metadata": {
+        "author": "",
+        "title": "Blocker Report",
+        "subject": "Blocker Status Report"
+      }
+    }
+  },
+  "style": {
+    "colors": {
+      "headerBackground": "#4472C4",
+      "subheaderBackground": "#8FAADC",
+      "alternateRowBackground": "#F2F2F2",
+      "borderColor": "#000000",
+      "priority": {
+        "p0": "#FF6B6B",
+        "p1": "#FFE066",
+        "p2": "#69DB7C"
+      },
+      "status": {
+        "completed": "#69DB7C",
+        "inProgress": "#FFE066",
+        "pending": "#FF6B6B"
+      }
+    },
+    "typography": {
+      "headerFont": { "size": 12, "bold": true, "italic": false, "color": "#FFFFFF" },
+      "subheaderFont": { "size": 11, "bold": true, "italic": false, "color": "#000000" },
+      "bodyFont": { "size": 10, "bold": false, "italic": false, "color": "#000000" },
+      "titleFont": { "size": 14, "bold": true, "italic": false, "color": "#000000" }
+    },
+    "layout": {
+      "defaultRowHeight": 20,
+      "defaultColumnWidth": 15,
+      "borderStyle": "thin",
+      "tabColor": "#4472C4"
+    }
+  },
+  "sources": {
+    "basePath": "",
+    "outputDir": "",
+    "dashboard": "",
+    "quarterly": {
+      "q1": "",
+      "q2": "",
+      "q3": "",
+      "q4": ""
+    },
+    "blockers": "",
+    "roadmap": "",
+    "betting": "",
+    "features": "",
+    "playbook": ""
+  },
+  "advanced": {
+    "weekStartDay": 0,
+    "dateFormat": "YYYY-MM-DD",
+    "debugLogging": false,
+    "logLevel": "INFO",
+    "cacheEnabled": true,
+    "cacheTTL": 300000
+  }
+}

@@ -1,0 +1,394 @@
+/**
+ * Quarterly Report Generator
+ * Generates 4-sheet quarterly status report
+ * Equivalent to Python reports/quarterly_report.py
+ * v2.0 - Enhanced with ConfigManager for i18n
+ */
+
+import { App } from 'obsidian';
+import { ExcelGenerator } from '../generators/ExcelGenerator';
+import { DataAggregator } from '../services/DataAggregator';
+import { ConfigManager } from '../services/ConfigManager';
+import { MetricsCalculator } from '../services/MetricsCalculator';
+import { ExcelAutomationSettings } from '../types/settings';
+import { LocaleStrings } from '../types/config';
+import { QuarterlyData, Metrics } from '../types/data';
+import { QuarterInfo, Task } from '../types/models';
+import { getCurrentQuarterInfo, formatDate, isOverdue } from '../utils/dateUtils';
+import { logger } from '../utils/logger';
+import { ChartBuilder } from '../generators/ChartBuilder';
+
+export class QuarterlyReportGenerator extends ExcelGenerator {
+  private aggregator: DataAggregator;
+  private localeStrings: LocaleStrings;
+
+  constructor(
+    private app: App,
+    settings: ExcelAutomationSettings,
+    aggregator?: DataAggregator,
+    configManager?: ConfigManager
+  ) {
+    super(settings, configManager);
+    this.aggregator = aggregator || new DataAggregator(app, settings, configManager);
+    this.localeStrings = configManager?.getLocaleStrings() || this.getDefaultLocaleStrings();
+  }
+
+  private getDefaultLocaleStrings(): LocaleStrings {
+    // Return Korean defaults for backward compatibility
+    return {
+      reports: { weekly: '주간 리포트', quarterly: '분기 리포트', feature: '피처 리포트', blocker: '블로커 리포트' },
+      sheets: {
+        weeklySummary: '주간현황', roadmapProgress: '로드맵진척', taskDetails: '작업상세',
+        blockerTracking: '블로커추적', coordination: '협의사항', milestones: '마일스톤',
+        playbookProgress: '플레이북진척', quarterlyOverview: '분기 개요', p0Tasks: 'P0 작업',
+        p1Tasks: 'P1 작업', progressAnalytics: '진척 분석', allFeatures: '전체 피처',
+        byPriority: '우선순위별', byCycle: '사이클별', activeBlockers: '활성 블로커', blockerHistory: '블로커 이력',
+      },
+      columns: {
+        id: 'ID', name: '작업명', owner: '담당자', status: '상태', deadline: '마감일',
+        priority: '우선순위', description: '설명', category: '구분', content: '협의내용',
+        target: '목표', current: '현재', percentage: '진척률', risk: '위험', date: '날짜',
+        cycle: '사이클', impact: '영향', resolution: '해결책', quarter: '분기', week: '주차',
+      },
+      kpi: {
+        totalTasks: '전체 작업', completed: '완료', p0CompletionRate: 'P0 완료율', blockers: '블로커',
+        activeBlockers: '활성 블로커', resolvedBlockers: '해결된 블로커', totalFeatures: '전체 피처',
+        inProgress: '진행중', pending: '대기',
+      },
+      status: { completed: '완료', inProgress: '진행중', pending: '대기', resolved: '해결', unresolved: '미해결' },
+      priority: { p0: 'P0', p1: 'P1', p2: 'P2', high: '높음', medium: '중간', low: '낮음' },
+      ui: {
+        generateReport: '리포트 생성', settings: '설정', language: '언어', parsingRules: '파싱 규칙',
+        reportSchema: '리포트 스키마', presets: '프리셋', importExport: '가져오기/내보내기',
+        reset: '초기화', save: '저장', cancel: '취소', apply: '적용',
+      },
+      messages: {
+        reportGenerated: '리포트가 생성되었습니다', reportFailed: '리포트 생성 실패',
+        settingsSaved: '설정이 저장되었습니다', presetApplied: '프리셋이 적용되었습니다',
+        validationError: '유효성 검사 오류', loading: '로딩중...', noData: '데이터가 없습니다',
+      },
+    };
+  }
+
+  /**
+   * Generate quarterly report with 4 sheets
+   */
+  async generate(quarter?: number, year?: number): Promise<ArrayBuffer> {
+    const quarterInfo = getCurrentQuarterInfo();
+    const targetQuarter = quarter || quarterInfo.quarter;
+    const targetYear = year || quarterInfo.year;
+
+    logger.info(`Generating Quarterly Report for Q${targetQuarter} ${targetYear}...`);
+
+    // Load quarterly data
+    const q1Data = await this.aggregator.loadQuarterlyData(targetQuarter);
+
+    // Calculate metrics
+    const metrics = MetricsCalculator.calculateQuarterlyMetrics(q1Data);
+
+    // Create workbook
+    this.createWorkbook();
+
+    // Generate 4 sheets
+    logger.debug('Creating Sheet 1: Overview');
+    this.createSheet1Overview(q1Data, metrics as Metrics, targetQuarter, targetYear);
+
+    logger.debug('Creating Sheet 2: P0 Tasks');
+    this.createSheet2P0Tasks(q1Data);
+
+    logger.debug('Creating Sheet 3: P1 Tasks');
+    this.createSheet3P1Tasks(q1Data);
+
+    logger.debug('Creating Sheet 4: Progress Analytics');
+    this.createSheet4Analytics(q1Data, metrics as Metrics);
+
+    logger.info('Quarterly report generated successfully');
+    return this.generateBuffer();
+  }
+
+  /**
+   * Sheet 1: Overview (Summary & KPIs)
+   * Uses localized strings for labels
+   */
+  private createSheet1Overview(
+    data: QuarterlyData,
+    metrics: Metrics,
+    quarter: number,
+    year: number
+  ): void {
+    const sheets = this.localeStrings.sheets;
+    const kpiLabels = this.localeStrings.kpi;
+    const cols = this.localeStrings.columns;
+    const ws = this.addSheet(sheets.quarterlyOverview);
+    const sm = this.getStyleManager();
+    let row = 1;
+
+    // Title
+    const titleCell = ws.getCell(row, 1);
+    sm.applyTitleStyle(titleCell, `STOREAGENT Q${quarter} ${year} ${this.localeStrings.reports.quarterly}`);
+    this.mergeCells(ws, row, 1, row, 6);
+    this.setRowHeight(ws, row, 30);
+    row++;
+
+    // Date
+    const dateCell = ws.getCell(row, 1);
+    dateCell.value = `${cols.date}: ${formatDate(new Date())}`;
+    dateCell.font = { size: 10, color: { argb: 'FF666666' } };
+    row += 2;
+
+    // KPI Boxes
+    const kpis = [
+      { label: kpiLabels.totalTasks, value: `${metrics.totalTasks}` },
+      { label: kpiLabels.p0CompletionRate, value: `${Math.round(metrics.completionRate)}%` },
+      { label: `${this.localeStrings.priority.p0} ${kpiLabels.completed}`, value: `${metrics.p0Completed}/${metrics.p0Total}` },
+      { label: `${this.localeStrings.priority.p1} ${kpiLabels.completed}`, value: `${metrics.p1Completed}/${metrics.p1Total}` },
+    ];
+
+    row = this.addMetricBoxes(ws, kpis, row, 1, 4);
+    row++;
+
+    // Task Breakdown
+    const breakdownHeader = ws.getCell(row, 1);
+    sm.applySubheaderStyle(breakdownHeader, 'Task Breakdown by Priority');
+    this.mergeCells(ws, row, 1, row, 4);
+    row++;
+
+    const breakdownHeaders = ['Priority', 'Total', 'Completed', 'Completion %'];
+    const breakdownData = [
+      ['P0 (Critical)', metrics.p0Total, metrics.p0Completed, `${Math.round(metrics.p0CompletionRate)}%`],
+      ['P1 (High)', metrics.p1Total, metrics.p1Completed, `${Math.round(metrics.p1CompletionRate)}%`],
+      ['P2 (Normal)', metrics.p2Total, metrics.p2Completed, `${Math.round(metrics.p2CompletionRate)}%`],
+    ];
+
+    row = this.addTable(ws, breakdownHeaders, breakdownData, row, 1);
+    row++;
+
+    // Status Summary
+    const statusHeader = ws.getCell(row, 1);
+    sm.applySubheaderStyle(statusHeader, 'Status Summary');
+    this.mergeCells(ws, row, 1, row, 4);
+    row++;
+
+    const statusData: Record<string, string | number> = {
+      'Total Tasks': metrics.totalTasks,
+      'Completed': metrics.completedTasks,
+      'In Progress': metrics.pendingTasks,
+      'Completion Rate': `${Math.round(metrics.completionRate)}%`,
+    };
+
+    row = this.addSummarySection(ws, '', statusData, row, 1);
+
+    sm.setColumnWidths(ws, { 1: 20, 2: 15, 3: 15, 4: 15 });
+    this.setSheetProperties(ws, { freezePanes: false });
+  }
+
+  /**
+   * Sheet 2: P0 Tasks (Critical tasks detail)
+   * Uses localized strings for sheet name and labels
+   */
+  private createSheet2P0Tasks(data: QuarterlyData): void {
+    const sheets = this.localeStrings.sheets;
+    const cols = this.localeStrings.columns;
+    const status = this.localeStrings.status;
+    const ws = this.addSheet(sheets.p0Tasks);
+    const sm = this.getStyleManager();
+    let row = 1;
+
+    // Title
+    const titleCell = ws.getCell(row, 1);
+    sm.applyTitleStyle(titleCell, `${this.localeStrings.priority.p0} ${this.localeStrings.kpi.totalTasks}`);
+    this.mergeCells(ws, row, 1, row, 6);
+    this.setRowHeight(ws, row, 25);
+    row += 2;
+
+    const headers = [cols.id, cols.name, cols.status, cols.deadline, cols.category, cols.percentage];
+
+    const tableData = data.p0Tasks.map((task, idx) => [
+      `P0-${String(idx + 1).padStart(2, '0')}`,
+      task.content,
+      task.status ? status.completed : status.inProgress,
+      task.dueDate ? formatDate(task.dueDate, 'MM/DD') : '-',
+      task.tags.join(', ') || '-',
+      task.status ? '100%' : '-',
+    ]);
+
+    row = this.addTable(ws, headers, tableData, row, 1, {
+      alternateColors: true,
+      applyStatusToColumn: 2,
+    });
+
+    // Apply status and overdue styling
+    for (let i = 0; i < data.p0Tasks.length; i++) {
+      const task = data.p0Tasks[i];
+      const statusCell = ws.getCell(i + 4, 3); // row = header(3) + data row
+      sm.applyStatusStyle(statusCell, task.status ? status.completed : status.inProgress);
+
+      // Highlight overdue
+      if (!task.status && isOverdue(task.dueDate)) {
+        const dueDateCell = ws.getCell(i + 4, 4);
+        dueDateCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFCCCC' },
+        };
+      }
+    }
+
+    // Summary at bottom
+    row++;
+    const summaryData: Record<string, string | number> = {
+      'Total P0 Tasks': data.p0Total,
+      'Completed': data.p0Completed,
+      'Remaining': data.p0Total - data.p0Completed,
+      'Completion Rate': `${data.p0Total > 0 ? Math.round((data.p0Completed / data.p0Total) * 100) : 0}%`,
+    };
+
+    this.addSummarySection(ws, 'P0 Summary', summaryData, row, 1);
+
+    this.setSheetProperties(ws, { autoFilter: true, filterRange: `A3:F${data.p0Tasks.length + 3}` });
+  }
+
+  /**
+   * Sheet 3: P1 Tasks (High priority tasks detail)
+   * Uses localized strings for sheet name and labels
+   */
+  private createSheet3P1Tasks(data: QuarterlyData): void {
+    const sheets = this.localeStrings.sheets;
+    const cols = this.localeStrings.columns;
+    const status = this.localeStrings.status;
+    const ws = this.addSheet(sheets.p1Tasks);
+    const sm = this.getStyleManager();
+    let row = 1;
+
+    // Title
+    const titleCell = ws.getCell(row, 1);
+    sm.applyTitleStyle(titleCell, `${this.localeStrings.priority.p1} ${this.localeStrings.kpi.totalTasks}`);
+    this.mergeCells(ws, row, 1, row, 6);
+    this.setRowHeight(ws, row, 25);
+    row += 2;
+
+    const headers = [cols.id, cols.name, cols.status, cols.deadline, cols.category, cols.percentage];
+
+    const tableData = data.p1Tasks.map((task, idx) => [
+      `P1-${String(idx + 1).padStart(2, '0')}`,
+      task.content,
+      task.status ? status.completed : status.inProgress,
+      task.dueDate ? formatDate(task.dueDate, 'MM/DD') : '-',
+      task.tags.join(', ') || '-',
+      task.status ? '100%' : '-',
+    ]);
+
+    row = this.addTable(ws, headers, tableData, row, 1, {
+      alternateColors: true,
+      applyStatusToColumn: 2,
+    });
+
+    // Apply status styling
+    for (let i = 0; i < data.p1Tasks.length; i++) {
+      const task = data.p1Tasks[i];
+      const statusCell = ws.getCell(i + 4, 3);
+      sm.applyStatusStyle(statusCell, task.status ? status.completed : status.inProgress);
+
+      // Highlight overdue
+      if (!task.status && isOverdue(task.dueDate)) {
+        const dueDateCell = ws.getCell(i + 4, 4);
+        dueDateCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFCCCC' },
+        };
+      }
+    }
+
+    // Summary at bottom
+    row++;
+    const summaryData: Record<string, string | number> = {
+      'Total P1 Tasks': data.p1Total,
+      'Completed': data.p1Completed,
+      'Remaining': data.p1Total - data.p1Completed,
+      'Completion Rate': `${data.p1Total > 0 ? Math.round((data.p1Completed / data.p1Total) * 100) : 0}%`,
+    };
+
+    this.addSummarySection(ws, 'P1 Summary', summaryData, row, 1);
+
+    this.setSheetProperties(ws, { autoFilter: true, filterRange: `A3:F${data.p1Tasks.length + 3}` });
+  }
+
+  /**
+   * Sheet 4: Progress Analytics
+   * Uses localized strings for sheet name and labels
+   */
+  private createSheet4Analytics(data: QuarterlyData, metrics: Metrics): void {
+    const sheets = this.localeStrings.sheets;
+    const kpiLabels = this.localeStrings.kpi;
+    const ws = this.addSheet(sheets.progressAnalytics);
+    const sm = this.getStyleManager();
+    let row = 1;
+
+    // Title
+    const titleCell = ws.getCell(row, 1);
+    sm.applyTitleStyle(titleCell, sheets.progressAnalytics);
+    this.mergeCells(ws, row, 1, row, 6);
+    this.setRowHeight(ws, row, 25);
+    row += 2;
+
+    // KPI Dashboard
+    const kpis = [
+      { label: 'Total Tasks', value: metrics.totalTasks, color: 'D9E1F2' },
+      { label: 'Completed', value: metrics.completedTasks, trend: 'up' as const, color: 'C6EFCE' },
+      { label: 'Completion Rate', value: `${Math.round(metrics.completionRate)}%`, color: 'D9E1F2' },
+      { label: 'P0 Progress', value: `${Math.round(metrics.p0CompletionRate)}%`, color: metrics.p0CompletionRate >= 50 ? 'C6EFCE' : 'FFC7CE' },
+    ];
+
+    row = ChartBuilder.addKPIBoxes(ws, kpis, row, 1, 4);
+    row += 1;
+
+    // Completion Pie Chart
+    const pieData = [
+      { label: 'Completed', value: metrics.completedTasks, color: 'C6EFCE' },
+      { label: 'Pending', value: metrics.pendingTasks, color: 'FFC7CE' },
+    ];
+
+    row = ChartBuilder.addPieChartData(ws, pieData, row, 1, { title: 'Task Completion Status' });
+    row += 1;
+
+    // Priority Stacked Comparison
+    const priorityItems = [
+      { label: 'P0 (Critical)', completed: metrics.p0Completed, pending: metrics.p0Total - metrics.p0Completed },
+      { label: 'P1 (High)', completed: metrics.p1Completed, pending: metrics.p1Total - metrics.p1Completed },
+      { label: 'P2 (Normal)', completed: metrics.p2Completed, pending: metrics.p2Total - metrics.p2Completed },
+    ];
+
+    row = ChartBuilder.addStackedComparison(ws, 'Progress by Priority', priorityItems, row, 1);
+    row += 1;
+
+    // Priority Distribution Bar Chart
+    const categories = ['P0', 'P1', 'P2'];
+    const barSeries = [
+      { name: 'Total', values: [metrics.p0Total, metrics.p1Total, metrics.p2Total] },
+      { name: 'Completed', values: [metrics.p0Completed, metrics.p1Completed, metrics.p2Completed] },
+    ];
+
+    row = ChartBuilder.addBarChartData(ws, categories, barSeries, row, 1, { title: 'Task Distribution by Priority' });
+    row += 1;
+
+    // Completion Summary Table
+    const completionHeader = ws.getCell(row, 1);
+    sm.applySubheaderStyle(completionHeader, 'Detailed Completion Summary');
+    this.mergeCells(ws, row, 1, row, 4);
+    row++;
+
+    const completionHeaders = ['Category', 'Total', 'Completed', 'Rate'];
+    const completionData = [
+      ['All Tasks', metrics.totalTasks, metrics.completedTasks, `${Math.round(metrics.completionRate)}%`],
+      ['P0 Tasks', metrics.p0Total, metrics.p0Completed, `${Math.round(metrics.p0CompletionRate)}%`],
+      ['P1 Tasks', metrics.p1Total, metrics.p1Completed, `${Math.round(metrics.p1CompletionRate)}%`],
+      ['P2 Tasks', metrics.p2Total, metrics.p2Completed, `${Math.round(metrics.p2CompletionRate)}%`],
+    ];
+
+    row = this.addTable(ws, completionHeaders, completionData, row, 1);
+
+    sm.setColumnWidths(ws, { 1: 20, 2: 15, 3: 15, 4: 25, 5: 15, 6: 15 });
+    this.setSheetProperties(ws, { freezePanes: false });
+  }
+}

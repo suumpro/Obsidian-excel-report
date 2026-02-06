@@ -1,0 +1,10 @@
+/* Excel Automation Plugin Styles */
+
+/* Settings tab styling */
+.excel-automation-settings .setting-item-heading {
+  margin-top: 1.5em;
+}
+
+.excel-automation-settings .setting-item-description {
+  color: var(--text-muted);
+}

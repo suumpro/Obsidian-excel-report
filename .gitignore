@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+main.js
+dist/
+
+# Release artifacts
+*.zip
+
+# Coverage
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python legacy (v1/v2)
+venv/
+__pycache__/
+*.egg-info/
+*.pyc
+
+# IDE
+.idea/
+.vscode/
+*.swp
