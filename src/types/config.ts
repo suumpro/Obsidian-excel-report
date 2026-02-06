@@ -6,7 +6,7 @@
 // ============================================
 // CONFIGURATION VERSION
 // ============================================
-export const CONFIG_VERSION = '2.0';
+export const CONFIG_VERSION = '2.1';
 
 // ============================================
 // LOCALE TYPES
@@ -332,6 +332,14 @@ export interface SourceMappings {
   betting: string;
   features: string;
   playbook: string;
+  taskMasters?: {
+    q1: string;
+    q2: string;
+    q3: string;
+    q4: string;
+    index: string;
+  };
+  customerRequests?: string;
 }
 
 // ============================================
@@ -347,6 +355,17 @@ export interface AdvancedSettings {
 }
 
 // ============================================
+// OUTPUT CONFIGURATION
+// ============================================
+export interface OutputConfig {
+  baseDir: string;
+  weeklySubdir: string;
+  quarterlySubdir: string;
+  featureSubdir: string;
+  blockerSubdir: string;
+}
+
+// ============================================
 // MAIN PLUGIN CONFIG
 // ============================================
 export interface PluginConfig {
@@ -357,6 +376,7 @@ export interface PluginConfig {
   reports: ReportSchemaConfig;
   style: StyleConfig;
   sources: SourceMappings;
+  output?: OutputConfig;
   advanced: AdvancedSettings;
 }
 

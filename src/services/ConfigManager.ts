@@ -18,6 +18,7 @@ import {
   DEFAULT_ADVANCED_SETTINGS,
   DEFAULT_STYLE_CONFIG,
   DEFAULT_SOURCE_MAPPINGS,
+  OutputConfig,
 } from '../types/config';
 import { deepMerge, validateConfig, cloneConfig } from '../utils/configUtils';
 import { getPreset, PresetName, getDefaultPresetName } from '../config/presets';
@@ -170,6 +171,33 @@ export class ConfigManager {
 
     // Deep merge: preset as base, old config as override
     const upgraded = deepMerge(currentPreset, oldConfig);
+
+    // v2.0 → v2.1 migration
+    if (oldConfig.version === '2.0') {
+      console.log('Applying v2.0 → v2.1 migration...');
+
+      // Add Task Master paths if not present
+      if (!upgraded.sources.taskMasters) {
+        upgraded.sources.taskMasters = { q1: '', q2: '', q3: '', q4: '', index: '' };
+      }
+
+      // Add Customer Requests path if not present
+      if (upgraded.sources.customerRequests === undefined) {
+        upgraded.sources.customerRequests = '';
+      }
+
+      // Add output config if not present
+      if (!(upgraded as any).output) {
+        (upgraded as any).output = {
+          baseDir: '',
+          weeklySubdir: '',
+          quarterlySubdir: '',
+          featureSubdir: '',
+          blockerSubdir: '',
+        };
+      }
+    }
+
     upgraded.version = CONFIG_VERSION;
 
     return upgraded;
@@ -243,6 +271,13 @@ export class ConfigManager {
    */
   getAdvanced(): AdvancedSettings {
     return this.config.advanced;
+  }
+
+  /**
+   * Get output configuration
+   */
+  getOutputConfig(): OutputConfig | null {
+    return this.config.output || null;
   }
 
   // ========== SETTERS ==========

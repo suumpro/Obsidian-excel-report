@@ -1,9 +1,16 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-02-05T23:46:10.553Z",
+  "lastUpdated": "2026-02-06T01:28:25.032Z",
   "activeFeatures": [
     "tests",
-    "obsidian-excel-automation"
+    "obsidian-excel-automation",
+    "MarkdownParser.ts",
+    "DataAggregator.ts",
+    "ConfigManager.ts",
+    "ui",
+    "reports",
+    "generators",
+    "MetricsCalculator.ts"
   ],
   "primaryFeature": "tests",
   "features": {
@@ -16,9 +23,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-02-05T23:31:38.935Z",
-        "lastUpdated": "2026-02-05T23:33:11.676Z"
+        "lastUpdated": "2026-02-06T01:03:12.900Z"
       },
-      "lastFile": "/Users/jamin.park/Downloads/obsidian-excel-automation/tests/MetricsCalculator.test.ts"
+      "lastFile": "/Users/jamin.park/Downloads/obsidian-excel-automation/tests/CustomerRequestParser.test.ts"
     },
     "obsidian-excel-automation": {
       "phase": "do",
@@ -29,9 +36,100 @@
       "documents": {},
       "timestamps": {
         "started": "2026-02-05T23:46:04.735Z",
-        "lastUpdated": "2026-02-05T23:46:10.553Z"
+        "lastUpdated": "2026-02-06T01:27:20.247Z"
       },
-      "lastFile": "/Users/jamin.park/Downloads/obsidian-excel-automation/src/main.ts"
+      "lastFile": "/Users/jamin.park/Downloads/obsidian-excel-automation/src/types/data.ts"
+    },
+    "MarkdownParser.ts": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-06T00:46:01.902Z",
+        "lastUpdated": "2026-02-06T00:48:41.542Z"
+      },
+      "lastFile": "/Users/jamin.park/Downloads/obsidian-excel-automation/src/services/MarkdownParser.ts"
+    },
+    "DataAggregator.ts": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-06T00:48:43.073Z",
+        "lastUpdated": "2026-02-06T01:24:26.140Z"
+      },
+      "lastFile": "/Users/jamin.park/Downloads/obsidian-excel-automation/src/services/DataAggregator.ts"
+    },
+    "ConfigManager.ts": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-06T00:52:53.372Z",
+        "lastUpdated": "2026-02-06T01:27:31.729Z"
+      },
+      "lastFile": "/Users/jamin.park/Downloads/obsidian-excel-automation/src/services/ConfigManager.ts"
+    },
+    "ui": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-06T00:53:33.007Z",
+        "lastUpdated": "2026-02-06T00:53:33.007Z"
+      },
+      "lastFile": "/Users/jamin.park/Downloads/obsidian-excel-automation/src/ui/SettingsTab.ts"
+    },
+    "reports": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-06T00:57:23.537Z",
+        "lastUpdated": "2026-02-06T01:27:19.028Z"
+      },
+      "lastFile": "/Users/jamin.park/Downloads/obsidian-excel-automation/src/reports/WeeklyReport.ts"
+    },
+    "generators": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-06T01:24:10.944Z",
+        "lastUpdated": "2026-02-06T01:28:25.032Z"
+      },
+      "lastFile": "/Users/jamin.park/Downloads/obsidian-excel-automation/src/generators/ExcelGenerator.ts"
+    },
+    "MetricsCalculator.ts": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-06T01:27:21.356Z",
+        "lastUpdated": "2026-02-06T01:27:21.356Z"
+      },
+      "lastFile": "/Users/jamin.park/Downloads/obsidian-excel-automation/src/services/MetricsCalculator.ts"
     }
   },
   "archivedFeatures": {
@@ -133,7 +231,7 @@
   "session": {
     "startedAt": "2026-02-05T08:00:00.000Z",
     "onboardingCompleted": true,
-    "lastActivity": "2026-02-05T23:46:10.553Z"
+    "lastActivity": "2026-02-06T01:28:25.032Z"
   },
   "history": [
     {
@@ -235,6 +333,306 @@
     {
       "timestamp": "2026-02-05T23:46:10.553Z",
       "feature": "obsidian-excel-automation",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:40:48.650Z",
+      "feature": "obsidian-excel-automation",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:40:59.509Z",
+      "feature": "obsidian-excel-automation",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:41:03.071Z",
+      "feature": "obsidian-excel-automation",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:41:05.032Z",
+      "feature": "obsidian-excel-automation",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:41:08.775Z",
+      "feature": "obsidian-excel-automation",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:41:15.482Z",
+      "feature": "obsidian-excel-automation",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:41:31.374Z",
+      "feature": "obsidian-excel-automation",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:46:01.902Z",
+      "feature": "MarkdownParser.ts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:46:18.802Z",
+      "feature": "MarkdownParser.ts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:47:25.271Z",
+      "feature": "MarkdownParser.ts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:48:40.378Z",
+      "feature": "obsidian-excel-automation",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:48:41.542Z",
+      "feature": "MarkdownParser.ts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:48:43.073Z",
+      "feature": "DataAggregator.ts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:50:18.248Z",
+      "feature": "DataAggregator.ts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:50:38.612Z",
+      "feature": "DataAggregator.ts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:50:58.068Z",
+      "feature": "DataAggregator.ts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:51:12.752Z",
+      "feature": "DataAggregator.ts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:51:25.163Z",
+      "feature": "DataAggregator.ts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:52:37.100Z",
+      "feature": "obsidian-excel-automation",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:52:40.729Z",
+      "feature": "obsidian-excel-automation",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:52:44.264Z",
+      "feature": "obsidian-excel-automation",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:52:46.978Z",
+      "feature": "obsidian-excel-automation",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:52:49.722Z",
+      "feature": "obsidian-excel-automation",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:52:53.372Z",
+      "feature": "ConfigManager.ts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:52:55.625Z",
+      "feature": "ConfigManager.ts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:53:06.700Z",
+      "feature": "ConfigManager.ts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:53:33.007Z",
+      "feature": "ui",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:57:23.537Z",
+      "feature": "reports",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:57:32.837Z",
+      "feature": "reports",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:57:37.305Z",
+      "feature": "reports",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:57:42.342Z",
+      "feature": "reports",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:57:48.107Z",
+      "feature": "reports",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:57:49.115Z",
+      "feature": "reports",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:58:02.036Z",
+      "feature": "reports",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:58:06.310Z",
+      "feature": "reports",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:58:38.795Z",
+      "feature": "reports",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T00:58:48.873Z",
+      "feature": "reports",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T01:02:55.598Z",
+      "feature": "tests",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T01:03:12.900Z",
+      "feature": "tests",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T01:24:10.944Z",
+      "feature": "generators",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T01:24:12.437Z",
+      "feature": "obsidian-excel-automation",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T01:24:22.338Z",
+      "feature": "reports",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T01:24:24.028Z",
+      "feature": "obsidian-excel-automation",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T01:24:26.140Z",
+      "feature": "DataAggregator.ts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T01:27:19.028Z",
+      "feature": "reports",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T01:27:20.247Z",
+      "feature": "obsidian-excel-automation",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T01:27:21.356Z",
+      "feature": "MetricsCalculator.ts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T01:27:22.581Z",
+      "feature": "ConfigManager.ts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T01:27:31.729Z",
+      "feature": "ConfigManager.ts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-06T01:28:25.032Z",
+      "feature": "generators",
       "phase": "do",
       "action": "updated"
     }

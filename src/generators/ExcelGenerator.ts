@@ -37,8 +37,11 @@ export class ExcelGenerator {
     return {
       headerColor: styleConfig.colors.headerBackground,
       subheaderColor: styleConfig.colors.subheaderBackground,
-      alternateColor: styleConfig.colors.alternateRowBackground,
-      priorityColors: styleConfig.colors.priority,
+      priorityColors: {
+        P0: styleConfig.colors.priority.p0,
+        P1: styleConfig.colors.priority.p1,
+        P2: styleConfig.colors.priority.p2,
+      },
       statusColors: styleConfig.colors.status,
     };
   }

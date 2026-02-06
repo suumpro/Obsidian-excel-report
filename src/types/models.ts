@@ -76,6 +76,14 @@ export interface Task {
   project?: string;
   /** Dataview-style inline fields (field:: value) */
   inlineFields?: Record<string, string>;
+  /** JIRA issue ID (e.g., SA-051) */
+  jiraId?: string;
+  /** Week number (e.g., 6 for W06) */
+  weekNumber?: number;
+  /** Quarter/priority tag (e.g., q1/p0) */
+  quarterTag?: string;
+  /** Area/feature tag (e.g., C2/스냅샷) */
+  areaTag?: string;
 }
 
 /**

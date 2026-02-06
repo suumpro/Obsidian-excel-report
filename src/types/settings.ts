@@ -27,6 +27,18 @@ export interface SourceMappings {
   featuresDir: string;
   /** Path to playbook file */
   playbook: string;
+  /** Path to Q1 Task Master file */
+  q1TaskMaster: string;
+  /** Path to Q2 Task Master file */
+  q2TaskMaster: string;
+  /** Path to Q3 Task Master file */
+  q3TaskMaster: string;
+  /** Path to Q4 Task Master file */
+  q4TaskMaster: string;
+  /** Path to Task Master Index file */
+  taskMasterIndex: string;
+  /** Path to Customer Requests file */
+  customerRequests: string;
 }
 
 /**
@@ -113,16 +125,22 @@ export const DEFAULT_SETTINGS: ExcelAutomationSettings = {
   outputDir: '02. Area/03. Work/STOREAGENT/05_Roadmap/Excel',
 
   sources: {
-    dashboard: '00_Dashboard/_PM Dashboard.md',
-    q1Status: '00_Dashboard/2026_Q1_Status.md',
-    q2Status: '00_Dashboard/2026_Q2_Status.md',
-    q3Status: '00_Dashboard/2026_Q3_Status.md',
-    q4Status: '00_Dashboard/2026_Q4_Status.md',
+    dashboard: '00_Dashboard/SA_Dashboard.md',
+    q1Status: '00_Dashboard/Quarterly_Status/2026_Q1_Status.md',
+    q2Status: '00_Dashboard/Quarterly_Status/2026_Q2_Status.md',
+    q3Status: '00_Dashboard/Quarterly_Status/2026_Q3_Status.md',
+    q4Status: '00_Dashboard/Quarterly_Status/2026_Q4_Status.md',
     blockers: '00_Dashboard/Blockers_Tracker.md',
-    roadmap: '05_Roadmap/Lawson_2026_로드맵_관리.md',
-    betting: '02_Implementation/Betting/2026_Q1_Betting.md',
+    roadmap: '05_Roadmap/Roadmap_Management.md',
+    betting: '',
     featuresDir: '02_Implementation/Features',
-    playbook: '../../01. Project/PRJ_2026_플레이북/01_Strategic/KPIs/2026_H1_Goals.md',
+    playbook: '',
+    q1TaskMaster: '05_Roadmap/Task_Masters/Q1_Task_Master.md',
+    q2TaskMaster: '05_Roadmap/Task_Masters/Q2_Task_Master.md',
+    q3TaskMaster: '05_Roadmap/Task_Masters/Q3_Task_Master.md',
+    q4TaskMaster: '05_Roadmap/Task_Masters/Q4_Task_Master.md',
+    taskMasterIndex: '05_Roadmap/_Task_Master_Index.md',
+    customerRequests: '05_Roadmap/Customer_Requests/Lawson_Requests_2026.md',
   },
 
   reports: {

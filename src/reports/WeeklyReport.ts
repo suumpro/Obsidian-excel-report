@@ -1,6 +1,6 @@
 /**
  * Weekly Report Generator
- * Generates 8-sheet weekly report in Lawson format
+ * Generates 9-sheet weekly report in Lawson format
  * Equivalent to Python reports/weekly_report.py
  * v2.0 - Enhanced with ConfigManager for i18n
  * v3.0 - Added Executive Summary dashboard as first sheet
@@ -13,7 +13,7 @@ import { ConfigManager } from '../services/ConfigManager';
 import { MetricsCalculator } from '../services/MetricsCalculator';
 import { ExcelAutomationSettings } from '../types/settings';
 import { LocaleStrings } from '../types/config';
-import { DashboardData, RoadmapData, BlockerData, QuarterlyData, Metrics, CoordinationItem, MilestoneItem, PlaybookItem } from '../types/data';
+import { DashboardData, RoadmapData, BlockerData, QuarterlyData, Metrics, CoordinationItem, MilestoneItem, PlaybookItem, TaskMasterData, WeeklyBreakdown, CustomerRequestData, CustomerRequest } from '../types/data';
 import { Task, WeekInfo, Priority, Blocker } from '../types/models';
 import { getCurrentWeekInfo, formatDate, getWeekRange } from '../utils/dateUtils';
 import { logger } from '../utils/logger';
@@ -22,7 +22,6 @@ import { ExecutiveSummary } from '../types/parsing';
 
 export class WeeklyReportGenerator extends ExcelGenerator {
   private aggregator: DataAggregator;
-  private configManager?: ConfigManager;
   private localeStrings: LocaleStrings;
 
   constructor(
@@ -32,7 +31,6 @@ export class WeeklyReportGenerator extends ExcelGenerator {
     configManager?: ConfigManager
   ) {
     super(settings, configManager);
-    this.configManager = configManager;
     this.aggregator = aggregator || new DataAggregator(app, settings, configManager);
     // Get locale strings or use defaults
     this.localeStrings = configManager?.getLocaleStrings() || this.getDefaultLocaleStrings();
@@ -78,7 +76,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
   }
 
   /**
-   * Generate weekly report with 8 sheets (including Executive Summary)
+   * Generate weekly report with 9 sheets (including Executive Summary)
    */
   async generate(weekInfo?: WeekInfo): Promise<ArrayBuffer> {
     const week = weekInfo || getCurrentWeekInfo();
@@ -86,11 +84,14 @@ export class WeeklyReportGenerator extends ExcelGenerator {
 
     // Load all data in parallel for better performance
     logger.debug('Loading data from Obsidian files (parallel)...');
-    const [dashboard, roadmap, blockers, q1Data] = await Promise.all([
+    const currentQuarter = Math.floor(new Date().getMonth() / 3) + 1;
+    const [dashboard, roadmap, blockers, q1Data, taskMaster, customerRequests] = await Promise.all([
       this.aggregator.loadDashboardData(),
       this.aggregator.loadRoadmapData(),
       this.aggregator.loadBlockerData(),
       this.aggregator.loadQuarterlyData(1),
+      this.aggregator.loadTaskMasterData(currentQuarter),
+      this.aggregator.loadCustomerRequestData(),
     ]);
 
     // Calculate metrics
@@ -113,7 +114,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
     // Create workbook
     this.createWorkbook();
 
-    // Generate 8 sheets using localized sheet names
+    // Generate 9 sheets using localized sheet names
     const sheets = this.localeStrings.sheets;
 
     // Sheet 1: Executive Summary (NEW in v3)
@@ -127,7 +128,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
     this.createSheet2RoadmapProgress(roadmap);
 
     logger.debug(`Creating Sheet 4: ${sheets.taskDetails}`);
-    this.createSheet3Q1Tasks(q1Data);
+    this.createSheet3Q1Tasks(q1Data, taskMaster);
 
     logger.debug(`Creating Sheet 5: ${sheets.blockerTracking}`);
     this.createSheet4Blockers(blockers);
@@ -140,6 +141,9 @@ export class WeeklyReportGenerator extends ExcelGenerator {
 
     logger.debug(`Creating Sheet 8: ${sheets.playbookProgress}`);
     this.createSheet7PlaybookProgress(dashboard.playbook || []);
+
+    logger.debug('Creating Sheet 9: 고객요청현황');
+    this.createSheet8CustomerRequests(customerRequests);
 
     logger.info('Weekly report generated successfully with Executive Summary');
     return this.generateBuffer();
@@ -569,21 +573,24 @@ export class WeeklyReportGenerator extends ExcelGenerator {
    * Sheet 3: Task Details (Q1 Tasks)
    * Uses localized strings for sheet name and headers
    */
-  private createSheet3Q1Tasks(q1Data: QuarterlyData): void {
+  private createSheet3Q1Tasks(q1Data: QuarterlyData, taskMaster?: TaskMasterData): void {
     const sheets = this.localeStrings.sheets;
     const cols = this.localeStrings.columns;
     const status = this.localeStrings.status;
     const ws = this.addSheet(sheets.taskDetails);
     const sm = this.getStyleManager();
 
-    const headers = [cols.category, cols.name, cols.priority, cols.owner, cols.deadline, cols.status];
+    const headers = [cols.category, cols.name, 'JIRA', cols.priority, cols.owner, cols.deadline, cols.status];
 
-    // Combine P0 and P1 tasks
-    const allTasks = [...q1Data.p0Tasks, ...q1Data.p1Tasks];
+    // Combine P0 and P1 tasks, prefer Task Master data if available
+    const sourceTasks = taskMaster && taskMaster.allTasks.length > 0
+      ? taskMaster.allTasks
+      : [...q1Data.p0Tasks, ...q1Data.p1Tasks];
 
-    const data = allTasks.map(task => [
-      task.category || '-',
+    const data = sourceTasks.map(task => [
+      task.category || task.areaTag || '-',
       task.content,
+      task.jiraId || '-',
       task.priority || 'P2',
       task.owner || '-',
       task.dueDate ? formatDate(task.dueDate, 'MM/DD') : '-',
@@ -592,21 +599,21 @@ export class WeeklyReportGenerator extends ExcelGenerator {
 
     this.addTable(ws, headers, data, 1, 1, {
       alternateColors: true,
-      applyPriorityToColumn: 2,
-      applyStatusToColumn: 5,
+      applyPriorityToColumn: 3,
+      applyStatusToColumn: 6,
     });
 
     // Apply styling
     for (let rowIdx = 0; rowIdx < data.length; rowIdx++) {
-      const task = allTasks[rowIdx];
+      const task = sourceTasks[rowIdx];
       if (task?.priority) {
-        sm.applyPriorityStyle(ws.getCell(rowIdx + 2, 3), task.priority);
+        sm.applyPriorityStyle(ws.getCell(rowIdx + 2, 4), task.priority);
       }
-      const statusCell = ws.getCell(rowIdx + 2, 6);
+      const statusCell = ws.getCell(rowIdx + 2, 7);
       sm.applyStatusStyle(statusCell, task?.status ? status.completed : status.inProgress);
     }
 
-    this.setSheetProperties(ws, { autoFilter: true, filterRange: 'A1:F' + (data.length + 1) });
+    this.setSheetProperties(ws, { autoFilter: true, filterRange: 'A1:G' + (data.length + 1) });
   }
 
   /**
@@ -828,5 +835,121 @@ export class WeeklyReportGenerator extends ExcelGenerator {
       ['D2-D4 Dev', '3', '0', '0%', status.pending],
       ['R1-R5 Research', '5', '0', '0%', status.pending],
     ];
+  }
+
+  /**
+   * Sheet 9: Customer Requests Status
+   * Shows customer request tracking with priority breakdown
+   */
+  private createSheet8CustomerRequests(customerData: CustomerRequestData): void {
+    const ws = this.addSheet('고객요청현황');
+    const sm = this.getStyleManager();
+    const cols = this.localeStrings.columns;
+    let row = 1;
+
+    // Title
+    const titleCell = ws.getCell(row, 1);
+    sm.applyTitleStyle(titleCell, `고객 요청 현황 - ${customerData.customer || 'N/A'}`);
+    this.mergeCells(ws, row, 1, row, 7);
+    this.setRowHeight(ws, row, 30);
+    row++;
+
+    // Summary KPI
+    const total = customerData.totalRequests;
+    const completed = customerData.completedCount;
+    const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    const metaCell = ws.getCell(row, 1);
+    metaCell.value = `전체: ${total}건 | 완료: ${completed}건 (${rate}%)`;
+    metaCell.font = { size: 10, color: { argb: 'FF666666' }, italic: true };
+    this.mergeCells(ws, row, 1, row, 7);
+    row += 2;
+
+    // KPI Boxes
+    const kpiBoxes = [
+      { label: '전체 요청', value: total, color: 'D9E1F2' },
+      { label: '완료', value: completed, color: 'C6EFCE' },
+      { label: '진행중', value: total - completed, color: completed < total ? 'FFEB9C' : 'C6EFCE' },
+      { label: '완료율', value: `${rate}%`, color: rate >= 50 ? 'C6EFCE' : 'FFC7CE' },
+    ];
+    row = ChartBuilder.addKPIBoxes(ws, kpiBoxes, row, 1, 4);
+    row += 2;
+
+    if (customerData.requests.length === 0) {
+      ws.getCell(row, 1).value = this.localeStrings.messages.noData;
+      ws.getCell(row, 1).font = { color: { argb: 'FF666666' } };
+      sm.setColumnWidths(ws, { 1: 15, 2: 30, 3: 15, 4: 12, 5: 15, 6: 12, 7: 20 });
+      this.setSheetProperties(ws, { freezePanes: false });
+      return;
+    }
+
+    // Priority sections
+    const priorityLabels: Record<number, string> = {
+      1: '우선순위 1 (필수)',
+      2: '우선순위 2 (중요)',
+      3: '우선순위 3 (일반)',
+      4: '우선순위 4 (보류)',
+    };
+
+    const priorityColors: Record<number, string> = {
+      1: 'FFC7CE',  // Red
+      2: 'FFEB9C',  // Yellow
+      3: 'D9E1F2',  // Blue
+      4: 'E2EFDA',  // Green
+    };
+
+    for (const priority of [1, 2, 3, 4]) {
+      const requests = customerData.byPriority[priority] || [];
+      if (requests.length === 0) continue;
+
+      // Section header
+      const sectionHeader = ws.getCell(row, 1);
+      sm.applySubheaderStyle(sectionHeader, priorityLabels[priority] || `우선순위 ${priority}`);
+      this.mergeCells(ws, row, 1, row, 7);
+      row++;
+
+      // Table headers
+      const headers = ['No.', '요청 내용', '반영 기능', '분기', cols.status, '연결 작업'];
+      for (let i = 0; i < headers.length; i++) {
+        const cell = ws.getCell(row, i + 1);
+        cell.value = headers[i];
+        cell.font = { bold: true, size: 10 };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + (priorityColors[priority] || 'D9E1F2') } };
+        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+      }
+      row++;
+
+      // Data rows
+      for (const req of requests) {
+        ws.getCell(row, 1).value = req.id;
+        ws.getCell(row, 2).value = req.title;
+        ws.getCell(row, 3).value = req.linkedFeature || '-';
+        ws.getCell(row, 4).value = req.dueDate || '-';
+        ws.getCell(row, 5).value = req.status;
+        ws.getCell(row, 6).value = req.description || '-';
+
+        // Apply borders and status colors
+        for (let col = 1; col <= 6; col++) {
+          ws.getCell(row, col).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        }
+
+        // Color status cell
+        const statusStr = req.status;
+        if (statusStr.includes('🔄') || statusStr.includes('진행')) {
+          ws.getCell(row, 5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEB9C' } };
+        } else if (statusStr.includes('📅') || statusStr.includes('예정')) {
+          ws.getCell(row, 5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+        } else if (statusStr.includes('⚠️') || statusStr.includes('블로커')) {
+          ws.getCell(row, 5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC7CE' } };
+        } else if (statusStr.includes('✅') || statusStr.includes('완료')) {
+          ws.getCell(row, 5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC6EFCE' } };
+        }
+        row++;
+      }
+      row++; // Space between priority sections
+    }
+
+    sm.setColumnWidths(ws, { 1: 8, 2: 35, 3: 18, 4: 12, 5: 12, 6: 25 });
+    this.setSheetProperties(ws, { freezePanes: false });
   }
 }

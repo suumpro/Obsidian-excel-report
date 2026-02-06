@@ -167,6 +167,24 @@
         "percentage": ["진척률", "Progress", "%", "퍼센트"],
         "risk": ["위험", "Risk", "리스크"]
       }
+    },
+    "weeklyBreakdown": {
+      "sectionPattern": "^## W(\\d+)(?:~W\\d+)?\\s*\\(([^)]+)\\)",
+      "newTasksHeaders": ["🚀 이번 주 시작", "Started this week", "New this week"],
+      "dueTasksHeaders": ["📅 이번 주 마감", "Due this week", "Deadlines"],
+      "milestonesHeaders": ["🎯 마일스톤", "Milestones"]
+    },
+    "customerRequest": {
+      "sectionPattern": "^## 우선순위 (\\d+)|^## Priority (\\d+)",
+      "priorityLabels": {
+        "1": ["필수", "Must", "Critical"],
+        "2": ["중요", "Important", "High"],
+        "3": ["일반", "Normal", "Medium"],
+        "4": ["보류", "Deferred", "Low"]
+      }
+    },
+    "gantt": {
+      "taskPattern": "^\\s+(.+?)\\s*:(\\w+,\\s*)?(.+)$"
     }
   },
   "reports": {
@@ -238,20 +256,35 @@
     }
   },
   "sources": {
-    "basePath": "",
-    "outputDir": "",
-    "dashboard": "",
+    "basePath": "02. Area/03. Work/STOREAGENT",
+    "outputDir": "02. Area/03. Work/STOREAGENT/05_Roadmap/Excel",
+    "dashboard": "00_Dashboard/SA_Dashboard.md",
     "quarterly": {
-      "q1": "",
-      "q2": "",
-      "q3": "",
-      "q4": ""
+      "q1": "00_Dashboard/Quarterly_Status/2026_Q1_Status.md",
+      "q2": "00_Dashboard/Quarterly_Status/2026_Q2_Status.md",
+      "q3": "00_Dashboard/Quarterly_Status/2026_Q3_Status.md",
+      "q4": "00_Dashboard/Quarterly_Status/2026_Q4_Status.md"
     },
-    "blockers": "",
-    "roadmap": "",
+    "blockers": "00_Dashboard/Blockers_Tracker.md",
+    "roadmap": "05_Roadmap/Roadmap_Management.md",
+    "taskMasters": {
+      "q1": "05_Roadmap/Task_Masters/Q1_Task_Master.md",
+      "q2": "05_Roadmap/Task_Masters/Q2_Task_Master.md",
+      "q3": "05_Roadmap/Task_Masters/Q3_Task_Master.md",
+      "q4": "05_Roadmap/Task_Masters/Q4_Task_Master.md",
+      "index": "05_Roadmap/_Task_Master_Index.md"
+    },
+    "customerRequests": "05_Roadmap/Customer_Requests/Lawson_Requests_2026.md",
     "betting": "",
-    "features": "",
+    "features": "02_Implementation/Features",
     "playbook": ""
+  },
+  "output": {
+    "baseDir": "05_Roadmap/Excel",
+    "weeklySubdir": "Generated/Weekly",
+    "quarterlySubdir": "Generated/Quarterly",
+    "featureSubdir": "Generated/Features",
+    "blockerSubdir": "Generated/Blockers"
   },
   "advanced": {
     "weekStartDay": 1,

@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    "resolveJsonModule": true,
     "inlineSourceMap": true,
     "inlineSources": true,
     "module": "ESNext",

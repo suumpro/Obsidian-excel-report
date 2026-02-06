@@ -114,6 +114,7 @@ export class MetricsCalculator {
       mediumPriorityBlockers: blockerData.mediumPriority.length,
       lowPriorityBlockers: blockerData.lowPriority.length,
       resolvedBlockers: resolved,
+      activeBlockers: blockers.length - resolved,
     };
   }
 

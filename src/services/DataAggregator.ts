@@ -16,10 +16,16 @@ import {
   RoadmapData,
   BlockerData,
   QuarterlyData,
+  TaskMasterData,
+  CustomerRequestData,
+  AnnualMasterData,
   emptyDashboardData,
   emptyRoadmapData,
   emptyBlockerData,
   emptyQuarterlyData,
+  emptyTaskMasterData,
+  emptyCustomerRequestData,
+  emptyAnnualMasterData,
 } from '../types/data';
 import { Feature, Priority } from '../types/models';
 import { logger } from '../utils/logger';
@@ -80,12 +86,12 @@ export class DataAggregator {
       const sources = this.configManager.getSources();
       // Handle quarterly sources specially
       if (key.startsWith('q') && key.endsWith('Status')) {
-        const quarter = key.charAt(1) as 'q1' | 'q2' | 'q3' | 'q4';
+        const quarter = `q${key.charAt(1)}` as 'q1' | 'q2' | 'q3' | 'q4';
         return sources.quarterly?.[quarter] || '';
       }
-      return (sources as Record<string, string>)[key] || '';
+      return (sources as unknown as Record<string, string>)[key] || '';
     }
-    return (this.settings.sources as Record<string, string>)[key] || '';
+    return (this.settings.sources as unknown as Record<string, string>)[key] || '';
   }
 
   /**
@@ -413,6 +419,220 @@ export class DataAggregator {
   }
 
   /**
+   * Load Task Master data for a specific quarter (Q1-Q4)
+   */
+  async loadTaskMasterData(quarter: number): Promise<TaskMasterData> {
+    // Get path from configManager or legacy settings
+    let sourcePath = '';
+    if (this.configManager) {
+      const taskMasters = this.configManager.getSources().taskMasters;
+      const key = `q${quarter}` as 'q1' | 'q2' | 'q3' | 'q4';
+      sourcePath = taskMasters?.[key] || '';
+    } else {
+      const key = `q${quarter}TaskMaster` as keyof SourceMappings;
+      sourcePath = (this.settings.sources[key] as string) || '';
+    }
+
+    if (!sourcePath) {
+      logger.debug(`No Task Master path configured for Q${quarter}`);
+      return emptyTaskMasterData(quarter);
+    }
+
+    const path = this.getFullPath(sourcePath);
+    const cacheKey = createCacheKey(`taskmaster-q${quarter}`, path);
+
+    if (!this.vault.fileExists(path)) {
+      logger.warn(`Task Master file not found: ${path}`);
+      return emptyTaskMasterData(quarter);
+    }
+
+    const mtime = this.vault.getFileMtime(path);
+    if (mtime) {
+      const cached = this.cacheManager.get<TaskMasterData>(cacheKey, mtime);
+      if (cached) return cached;
+    }
+
+    try {
+      const content = await this.vault.readFile(path);
+      const { metadata, content: body } = this.parser.parseFile(content);
+
+      const allTasks = this.parser.extractTasks(body);
+      const p0Tasks = allTasks.filter(t => t.priority === 'P0');
+      const p1Tasks = allTasks.filter(t => t.priority === 'P1');
+      const weeklyBreakdowns = this.parser.parseWeeklyBreakdowns(body);
+      const milestones = this.parser.parseMilestones(body);
+
+      const data: TaskMasterData = {
+        quarter,
+        theme: (metadata['theme'] as string) || '',
+        targetAcceptance: Number(metadata['target_acceptance']) || 0,
+        weeklyBreakdowns,
+        allTasks,
+        p0Tasks,
+        p1Tasks,
+        milestones,
+        frontmatter: metadata,
+      };
+
+      logger.debug(`Loaded Task Master Q${quarter}: ${allTasks.length} tasks, ${weeklyBreakdowns.length} weeks`);
+
+      if (mtime) {
+        this.cacheManager.set(cacheKey, data, mtime);
+      }
+      return data;
+    } catch (error) {
+      logger.error(`Error loading Task Master Q${quarter}: ${error}`);
+      return emptyTaskMasterData(quarter);
+    }
+  }
+
+  /**
+   * Load Annual Task Master Index data
+   */
+  async loadAnnualMasterData(): Promise<AnnualMasterData> {
+    let sourcePath = '';
+    if (this.configManager) {
+      sourcePath = this.configManager.getSources().taskMasters?.index || '';
+    } else {
+      sourcePath = this.settings.sources.taskMasterIndex || '';
+    }
+
+    if (!sourcePath) {
+      return emptyAnnualMasterData();
+    }
+
+    const path = this.getFullPath(sourcePath);
+    const cacheKey = createCacheKey('annual-master', path);
+
+    if (!this.vault.fileExists(path)) {
+      logger.warn(`Annual Master file not found: ${path}`);
+      return emptyAnnualMasterData();
+    }
+
+    const mtime = this.vault.getFileMtime(path);
+    if (mtime) {
+      const cached = this.cacheManager.get<AnnualMasterData>(cacheKey, mtime);
+      if (cached) return cached;
+    }
+
+    try {
+      const content = await this.vault.readFile(path);
+      const { metadata, content: body } = this.parser.parseFile(content);
+
+      const ganttItems = this.parser.parseMermaidGantt(body);
+
+      // Parse quarterly summary table
+      const quarterSummaries: { quarter: number; period: string; theme: string; target: string; status: string }[] = [];
+      const tableRows = this.parser.parseTable(body, '분기별');
+      if (tableRows.length === 0) {
+        // Try English heading
+        const tableRowsEn = this.parser.parseTable(body, 'Quarterly');
+        tableRowsEn.forEach((row, i) => {
+          quarterSummaries.push({
+            quarter: i + 1,
+            period: row['기간'] || row['Period'] || '',
+            theme: row['테마'] || row['Theme'] || '',
+            target: row['목표'] || row['Target'] || '',
+            status: row['상태'] || row['Status'] || '',
+          });
+        });
+      } else {
+        tableRows.forEach((row, i) => {
+          quarterSummaries.push({
+            quarter: i + 1,
+            period: row['기간'] || row['Period'] || '',
+            theme: row['테마'] || row['Theme'] || '',
+            target: row['목표'] || row['Target'] || '',
+            status: row['상태'] || row['Status'] || '',
+          });
+        });
+      }
+
+      const data: AnnualMasterData = {
+        year: Number(metadata['year']) || new Date().getFullYear(),
+        quarterSummaries,
+        ganttItems,
+      };
+
+      logger.debug(`Loaded Annual Master: ${ganttItems.length} Gantt items, ${quarterSummaries.length} quarters`);
+
+      if (mtime) {
+        this.cacheManager.set(cacheKey, data, mtime);
+      }
+      return data;
+    } catch (error) {
+      logger.error(`Error loading Annual Master: ${error}`);
+      return emptyAnnualMasterData();
+    }
+  }
+
+  /**
+   * Load Customer Request tracking data
+   */
+  async loadCustomerRequestData(): Promise<CustomerRequestData> {
+    let sourcePath = '';
+    if (this.configManager) {
+      sourcePath = this.configManager.getSources().customerRequests || '';
+    } else {
+      sourcePath = this.settings.sources.customerRequests || '';
+    }
+
+    if (!sourcePath) {
+      return emptyCustomerRequestData();
+    }
+
+    const path = this.getFullPath(sourcePath);
+    const cacheKey = createCacheKey('customer-requests', path);
+
+    if (!this.vault.fileExists(path)) {
+      logger.warn(`Customer Requests file not found: ${path}`);
+      return emptyCustomerRequestData();
+    }
+
+    const mtime = this.vault.getFileMtime(path);
+    if (mtime) {
+      const cached = this.cacheManager.get<CustomerRequestData>(cacheKey, mtime);
+      if (cached) return cached;
+    }
+
+    try {
+      const content = await this.vault.readFile(path);
+      const { metadata, content: body } = this.parser.parseFile(content);
+
+      const requests = this.parser.parseCustomerRequests(body);
+
+      // Group by priority
+      const byPriority: Record<number, typeof requests> = {};
+      for (const req of requests) {
+        if (!byPriority[req.priority]) byPriority[req.priority] = [];
+        byPriority[req.priority].push(req);
+      }
+
+      const completedCount = requests.filter(r =>
+        r.status === '✅' || r.status.includes('완료') || r.status.includes('Complete')
+      ).length;
+
+      const data: CustomerRequestData = {
+        customer: (metadata['customer'] as string) || '',
+        totalRequests: Number(metadata['total_requests']) || requests.length,
+        byPriority,
+        completedCount,
+        requests,
+      };
+
+      logger.debug(`Loaded Customer Requests: ${requests.length} requests for ${data.customer}`);
+
+      if (mtime) {
+        this.cacheManager.set(cacheKey, data, mtime);
+      }
+      return data;
+    } catch (error) {
+      logger.error(`Error loading Customer Requests: ${error}`);
+      return emptyCustomerRequestData();
+    }
+  }
+
+  /**
    * Load all data sources
    */
   async loadAllData(): Promise<{
@@ -420,16 +640,22 @@ export class DataAggregator {
     roadmap: RoadmapData;
     blockers: BlockerData;
     quarterly: QuarterlyData;
+    taskMaster: TaskMasterData;
+    annualMaster: AnnualMasterData;
+    customerRequests: CustomerRequestData;
   }> {
     const currentQuarter = Math.floor(new Date().getMonth() / 3) + 1;
 
-    const [dashboard, roadmap, blockers, quarterly] = await Promise.all([
+    const [dashboard, roadmap, blockers, quarterly, taskMaster, annualMaster, customerRequests] = await Promise.all([
       this.loadDashboardData(),
       this.loadRoadmapData(),
       this.loadBlockerData(),
       this.loadQuarterlyData(currentQuarter),
+      this.loadTaskMasterData(currentQuarter),
+      this.loadAnnualMasterData(),
+      this.loadCustomerRequestData(),
     ]);
 
-    return { dashboard, roadmap, blockers, quarterly };
+    return { dashboard, roadmap, blockers, quarterly, taskMaster, annualMaster, customerRequests };
   }
 }

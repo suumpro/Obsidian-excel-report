@@ -12,7 +12,7 @@ import { ConfigManager } from '../services/ConfigManager';
 import { MetricsCalculator } from '../services/MetricsCalculator';
 import { ExcelAutomationSettings } from '../types/settings';
 import { LocaleStrings } from '../types/config';
-import { QuarterlyData, Metrics } from '../types/data';
+import { QuarterlyData, Metrics, TaskMasterData, WeeklyBreakdown, CustomerRequestData, CustomerRequest } from '../types/data';
 import { QuarterInfo, Task } from '../types/models';
 import { getCurrentQuarterInfo, formatDate, isOverdue } from '../utils/dateUtils';
 import { logger } from '../utils/logger';
@@ -71,7 +71,7 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
   }
 
   /**
-   * Generate quarterly report with 4 sheets
+   * Generate quarterly report with 6 sheets
    */
   async generate(quarter?: number, year?: number): Promise<ArrayBuffer> {
     const quarterInfo = getCurrentQuarterInfo();
@@ -80,8 +80,13 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
 
     logger.info(`Generating Quarterly Report for Q${targetQuarter} ${targetYear}...`);
 
-    // Load quarterly data
-    const q1Data = await this.aggregator.loadQuarterlyData(targetQuarter);
+    // Load all quarterly data in parallel
+    const currentQuarter = targetQuarter;
+    const [q1Data, taskMaster, customerRequests] = await Promise.all([
+      this.aggregator.loadQuarterlyData(targetQuarter),
+      this.aggregator.loadTaskMasterData(targetQuarter),
+      this.aggregator.loadCustomerRequestData(),
+    ]);
 
     // Calculate metrics
     const metrics = MetricsCalculator.calculateQuarterlyMetrics(q1Data);
@@ -89,7 +94,7 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
     // Create workbook
     this.createWorkbook();
 
-    // Generate 4 sheets
+    // Generate 6 sheets
     logger.debug('Creating Sheet 1: Overview');
     this.createSheet1Overview(q1Data, metrics as Metrics, targetQuarter, targetYear);
 
@@ -101,6 +106,12 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
 
     logger.debug('Creating Sheet 4: Progress Analytics');
     this.createSheet4Analytics(q1Data, metrics as Metrics);
+
+    logger.debug('Creating Sheet 5: 주차별 진척');
+    this.createSheet5WeeklyBreakdown(taskMaster);
+
+    logger.debug('Creating Sheet 6: 고객요청 추적');
+    this.createSheet6CustomerRequests(customerRequests);
 
     logger.info('Quarterly report generated successfully');
     return this.generateBuffer();
@@ -389,6 +400,237 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
     row = this.addTable(ws, completionHeaders, completionData, row, 1);
 
     sm.setColumnWidths(ws, { 1: 20, 2: 15, 3: 15, 4: 25, 5: 15, 6: 15 });
+    this.setSheetProperties(ws, { freezePanes: false });
+  }
+
+  /**
+   * Sheet 5: Weekly Breakdown from Task Master
+   * Shows task progress per week within the quarter
+   */
+  private createSheet5WeeklyBreakdown(taskMaster: TaskMasterData): void {
+    const ws = this.addSheet('주차별 진척');
+    const sm = this.getStyleManager();
+    const cols = this.localeStrings.columns;
+    const status = this.localeStrings.status;
+    let row = 1;
+
+    // Title
+    const titleCell = ws.getCell(row, 1);
+    sm.applyTitleStyle(titleCell, `Q${taskMaster.quarter} 주차별 진척 현황`);
+    this.mergeCells(ws, row, 1, row, 7);
+    this.setRowHeight(ws, row, 30);
+    row++;
+
+    // Theme and target
+    if (taskMaster.theme) {
+      const themeCell = ws.getCell(row, 1);
+      themeCell.value = `테마: ${taskMaster.theme} | 목표 수락률: ${taskMaster.targetAcceptance}%`;
+      themeCell.font = { size: 10, color: { argb: 'FF666666' }, italic: true };
+      this.mergeCells(ws, row, 1, row, 7);
+      row++;
+    }
+    row++;
+
+    if (taskMaster.weeklyBreakdowns.length === 0) {
+      ws.getCell(row, 1).value = this.localeStrings.messages.noData;
+      ws.getCell(row, 1).font = { color: { argb: 'FF666666' } };
+      sm.setColumnWidths(ws, { 1: 12, 2: 15, 3: 35, 4: 15, 5: 15, 6: 12, 7: 12 });
+      this.setSheetProperties(ws, { freezePanes: false });
+      return;
+    }
+
+    // Weekly Summary Table
+    const summaryHeader = ws.getCell(row, 1);
+    sm.applySubheaderStyle(summaryHeader, '주차별 요약');
+    this.mergeCells(ws, row, 1, row, 5);
+    row++;
+
+    const summaryHeaders = [cols.week, '기간', '신규 작업', '마감 작업', '마일스톤'];
+    const summaryData = taskMaster.weeklyBreakdowns.map(wb => [
+      `W${String(wb.weekNumber).padStart(2, '0')}`,
+      wb.weekRange,
+      String(wb.newTasks.length),
+      String(wb.dueTasks.length),
+      wb.milestones.length > 0 ? wb.milestones.join(', ') : '-',
+    ]);
+
+    row = this.addTable(ws, summaryHeaders, summaryData, row, 1, { alternateColors: true });
+    row += 2;
+
+    // Detailed per-week sections
+    for (const wb of taskMaster.weeklyBreakdowns) {
+      // Week header
+      const weekHeader = ws.getCell(row, 1);
+      sm.applySubheaderStyle(weekHeader, `W${String(wb.weekNumber).padStart(2, '0')} (${wb.weekRange})`);
+      this.mergeCells(ws, row, 1, row, 7);
+      row++;
+
+      // New tasks this week
+      if (wb.newTasks.length > 0) {
+        const newLabel = ws.getCell(row, 1);
+        newLabel.value = '🚀 신규 시작';
+        newLabel.font = { bold: true, size: 10 };
+        row++;
+
+        const taskHeaders = [cols.name, 'JIRA', cols.priority, cols.owner, cols.deadline, cols.status];
+        const taskData = wb.newTasks.map(t => [
+          t.content,
+          t.jiraId || '-',
+          t.priority || 'P2',
+          t.owner || '-',
+          t.dueDate ? t.dueDate.toISOString().substring(5, 10).replace('-', '/') : '-',
+          t.status ? status.completed : status.inProgress,
+        ]);
+
+        row = this.addTable(ws, taskHeaders, taskData, row, 1, { alternateColors: true });
+        row++;
+      }
+
+      // Due tasks this week
+      if (wb.dueTasks.length > 0) {
+        const dueLabel = ws.getCell(row, 1);
+        dueLabel.value = '📅 마감 예정';
+        dueLabel.font = { bold: true, size: 10 };
+        row++;
+
+        const taskHeaders = [cols.name, 'JIRA', cols.priority, cols.owner, cols.deadline, cols.status];
+        const taskData = wb.dueTasks.map(t => [
+          t.content,
+          t.jiraId || '-',
+          t.priority || 'P2',
+          t.owner || '-',
+          t.dueDate ? t.dueDate.toISOString().substring(5, 10).replace('-', '/') : '-',
+          t.status ? status.completed : status.inProgress,
+        ]);
+
+        row = this.addTable(ws, taskHeaders, taskData, row, 1, { alternateColors: true });
+        row++;
+      }
+
+      // Milestones
+      if (wb.milestones.length > 0) {
+        const msLabel = ws.getCell(row, 1);
+        msLabel.value = '🎯 마일스톤';
+        msLabel.font = { bold: true, size: 10 };
+        row++;
+
+        for (const ms of wb.milestones) {
+          ws.getCell(row, 1).value = `  • ${ms}`;
+          row++;
+        }
+        row++;
+      }
+
+      row++; // Space between weeks
+    }
+
+    sm.setColumnWidths(ws, { 1: 30, 2: 12, 3: 10, 4: 12, 5: 12, 6: 10, 7: 10 });
+    this.setSheetProperties(ws, { freezePanes: false });
+  }
+
+  /**
+   * Sheet 6: Customer Request Tracking
+   * Shows customer request fulfillment status
+   */
+  private createSheet6CustomerRequests(customerData: CustomerRequestData): void {
+    const ws = this.addSheet('고객요청 추적');
+    const sm = this.getStyleManager();
+    const cols = this.localeStrings.columns;
+    let row = 1;
+
+    // Title
+    const titleCell = ws.getCell(row, 1);
+    sm.applyTitleStyle(titleCell, `고객 요청 추적 - ${customerData.customer || 'N/A'}`);
+    this.mergeCells(ws, row, 1, row, 6);
+    this.setRowHeight(ws, row, 30);
+    row++;
+
+    // Summary
+    const total = customerData.totalRequests;
+    const completed = customerData.completedCount;
+    const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    const metaCell = ws.getCell(row, 1);
+    metaCell.value = `전체: ${total}건 | 완료: ${completed}건 (${rate}%)`;
+    metaCell.font = { size: 10, color: { argb: 'FF666666' }, italic: true };
+    this.mergeCells(ws, row, 1, row, 6);
+    row += 2;
+
+    // Completion ring
+    row = ChartBuilder.addCompletionRing(ws, '고객 요청 완료율', completed, total, row, 1);
+    row += 2;
+
+    if (customerData.requests.length === 0) {
+      ws.getCell(row, 1).value = this.localeStrings.messages.noData;
+      ws.getCell(row, 1).font = { color: { argb: 'FF666666' } };
+      sm.setColumnWidths(ws, { 1: 8, 2: 30, 3: 15, 4: 12, 5: 12, 6: 20 });
+      this.setSheetProperties(ws, { freezePanes: false });
+      return;
+    }
+
+    // Priority breakdown summary
+    const breakdownHeader = ws.getCell(row, 1);
+    sm.applySubheaderStyle(breakdownHeader, '우선순위별 현황');
+    this.mergeCells(ws, row, 1, row, 4);
+    row++;
+
+    const priorityLabels: Record<number, string> = {
+      1: '필수 (P1)',
+      2: '중요 (P2)',
+      3: '일반 (P3)',
+      4: '보류 (P4)',
+    };
+
+    const priorityItems = [1, 2, 3, 4]
+      .map(p => {
+        const reqs = customerData.byPriority[p] || [];
+        const done = reqs.filter(r => r.status.includes('✅') || r.status.includes('완료')).length;
+        return {
+          label: priorityLabels[p] || `P${p}`,
+          completed: done,
+          pending: reqs.length - done,
+        };
+      })
+      .filter(item => item.completed + item.pending > 0);
+
+    row = ChartBuilder.addStackedComparison(ws, '', priorityItems, row, 1);
+    row += 2;
+
+    // Full request table
+    const tableHeader = ws.getCell(row, 1);
+    sm.applySubheaderStyle(tableHeader, '전체 요청 목록');
+    this.mergeCells(ws, row, 1, row, 6);
+    row++;
+
+    const headers = ['No.', '요청 내용', '우선순위', '분기', cols.status, '연결 기능'];
+    const tableData = customerData.requests.map(req => [
+      req.id,
+      req.title,
+      priorityLabels[req.priority] || `P${req.priority}`,
+      req.dueDate || '-',
+      req.status,
+      req.linkedFeature || '-',
+    ]);
+
+    row = this.addTable(ws, headers, tableData, row, 1, { alternateColors: true });
+
+    // Apply status styling to table
+    for (let i = 0; i < customerData.requests.length; i++) {
+      const req = customerData.requests[i];
+      const statusCell = ws.getCell(row - tableData.length + i - 1, 5);
+      const statusStr = req.status;
+      if (statusStr.includes('🔄') || statusStr.includes('진행')) {
+        statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEB9C' } };
+      } else if (statusStr.includes('📅') || statusStr.includes('예정')) {
+        statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+      } else if (statusStr.includes('⚠️')) {
+        statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC7CE' } };
+      } else if (statusStr.includes('✅') || statusStr.includes('완료')) {
+        statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC6EFCE' } };
+      }
+    }
+
+    sm.setColumnWidths(ws, { 1: 8, 2: 30, 3: 15, 4: 12, 5: 12, 6: 20 });
     this.setSheetProperties(ws, { freezePanes: false });
   }
 }

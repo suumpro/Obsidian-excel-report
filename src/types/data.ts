@@ -201,6 +201,7 @@ export interface Metrics {
   // Additional metrics
   overdueTasks: number;
   thisWeekTasks: number;
+  activeBlockers: number;
 }
 
 /**
@@ -307,5 +308,126 @@ export function emptyMetrics(): Metrics {
     resolvedBlockers: 0,
     overdueTasks: 0,
     thisWeekTasks: 0,
+    activeBlockers: 0,
+  };
+}
+
+// ============================================
+// TASK MASTER DATA
+// ============================================
+
+/** Q1-Q4 Task Master data with weekly breakdowns */
+export interface TaskMasterData {
+  quarter: number;
+  theme: string;
+  targetAcceptance: number;
+  weeklyBreakdowns: WeeklyBreakdown[];
+  allTasks: Task[];
+  p0Tasks: Task[];
+  p1Tasks: Task[];
+  milestones: MilestoneItem[];
+  frontmatter: Record<string, unknown>;
+}
+
+/** Weekly breakdown within a Task Master */
+export interface WeeklyBreakdown {
+  weekNumber: number;
+  weekRange: string;
+  newTasks: Task[];
+  dueTasks: Task[];
+  milestones: string[];
+}
+
+// ============================================
+// CUSTOMER REQUEST DATA
+// ============================================
+
+/** Customer request tracking data */
+export interface CustomerRequestData {
+  customer: string;
+  totalRequests: number;
+  byPriority: Record<number, CustomerRequest[]>;
+  completedCount: number;
+  requests: CustomerRequest[];
+}
+
+/** Individual customer request */
+export interface CustomerRequest {
+  id: string;
+  title: string;
+  priority: number;
+  status: string;
+  linkedFeature?: string;
+  dueDate?: string;
+  description?: string;
+}
+
+// ============================================
+// ANNUAL MASTER DATA
+// ============================================
+
+/** Annual master index data with Gantt timeline */
+export interface AnnualMasterData {
+  year: number;
+  quarterSummaries: QuarterSummary[];
+  ganttItems: GanttItem[];
+}
+
+/** Quarter summary in annual master */
+export interface QuarterSummary {
+  quarter: number;
+  period: string;
+  theme: string;
+  target: string;
+  status: string;
+}
+
+/** Gantt chart item */
+export interface GanttItem {
+  name: string;
+  section: string;
+  status: 'done' | 'active' | 'planned' | 'milestone';
+  startDate: string;
+  endDate: string;
+}
+
+/**
+ * Create empty TaskMasterData
+ */
+export function emptyTaskMasterData(quarter = 1): TaskMasterData {
+  return {
+    quarter,
+    theme: '',
+    targetAcceptance: 0,
+    weeklyBreakdowns: [],
+    allTasks: [],
+    p0Tasks: [],
+    p1Tasks: [],
+    milestones: [],
+    frontmatter: {},
+  };
+}
+
+/**
+ * Create empty CustomerRequestData
+ */
+export function emptyCustomerRequestData(): CustomerRequestData {
+  return {
+    customer: '',
+    totalRequests: 0,
+    byPriority: {},
+    completedCount: 0,
+    requests: [],
+  };
+}
+
+/**
+ * Create empty AnnualMasterData
+ */
+export function emptyAnnualMasterData(): AnnualMasterData {
+  return {
+    year: new Date().getFullYear(),
+    quarterSummaries: [],
+    ganttItems: [],
   };
 }

@@ -11,7 +11,7 @@
  */
 
 import { Task, Feature, Blocker, Priority, FeatureStatus, BlockerPriority, BlockerStatus } from '../types/models';
-import { CoordinationItem, MilestoneItem, PlaybookItem } from '../types/data';
+import { CoordinationItem, MilestoneItem, PlaybookItem, WeeklyBreakdown, CustomerRequest, GanttItem } from '../types/data';
 import { ParsingConfig, TaskParsingRules, FeatureParsingRules, BlockerParsingRules, TableParsingRules } from '../types/config';
 import { matchesAny, createSafeRegex } from '../utils/configUtils';
 import { RegexCache, getGlobalRegexCache } from '../utils/RegexCache';
@@ -211,6 +211,13 @@ export class MarkdownParser {
     while ((match = taskPattern.exec(content)) !== null) {
       const task = this.parseTaskLine(match[0], match[2], match[3]);
       if (task && this.matchesFilters(task, filters)) {
+        // Merge extended fields from Q-Task-Master format
+        const extensions = this.extractTaskExtensions(match[0]);
+        if (extensions.jiraId) task.jiraId = extensions.jiraId;
+        if (extensions.completedDate) task.completedDate = new Date(extensions.completedDate);
+        if (extensions.quarterTag) task.quarterTag = extensions.quarterTag;
+        if (extensions.areaTag) task.areaTag = extensions.areaTag;
+        if (extensions.startDate) task.startDate = new Date(extensions.startDate);
         tasks.push(task);
       }
     }
@@ -1254,5 +1261,472 @@ export class MarkdownParser {
    */
   private escapeRegex(str: string): string {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  // ============================================
+  // EXTENDED PARSING METHODS (Q-Task-Master)
+  // ============================================
+
+  /**
+   * Extract extended task fields from Q-Task-Master format
+   * Parses JIRA IDs, completion dates, quarter/area tags, and start dates
+   *
+   * @param text - Raw task line text
+   * @returns Object with optional extended fields
+   */
+  public extractTaskExtensions(text: string): {
+    jiraId?: string;
+    completedDate?: string;
+    quarterTag?: string;
+    areaTag?: string;
+    startDate?: string;
+  } {
+    const result: {
+      jiraId?: string;
+      completedDate?: string;
+      quarterTag?: string;
+      areaTag?: string;
+      startDate?: string;
+    } = {};
+
+    // JIRA ID: 🔗 SA-054
+    const jiraMatch = text.match(/🔗\s*(SA-\d+)/);
+    if (jiraMatch) {
+      result.jiraId = jiraMatch[1];
+    }
+
+    // Completed date: ✅ 2026-02-05
+    const completedMatch = text.match(/✅\s*(\d{4}-\d{2}-\d{2})/);
+    if (completedMatch) {
+      result.completedDate = completedMatch[1];
+    }
+
+    // Quarter tag: #q1/p0
+    const quarterMatch = text.match(/#q(\d+)\/p(\d+)/);
+    if (quarterMatch) {
+      result.quarterTag = `q${quarterMatch[1]}/p${quarterMatch[2]}`;
+    }
+
+    // Area tag: #C3/데이터 (stops before emoji markers)
+    const areaMatch = text.match(/#([A-Z]\d+)\/([^\s🛠️📅🔗✅]+)/);
+    if (areaMatch) {
+      result.areaTag = `${areaMatch[1]}/${areaMatch[2]}`;
+    }
+
+    // Start date: 🛠️ 2026-01-13
+    const startMatch = text.match(/🛠️\s*(\d{4}-\d{2}-\d{2})/);
+    if (startMatch) {
+      result.startDate = startMatch[1];
+    }
+
+    return result;
+  }
+
+  /**
+   * Parse Q-Task-Master weekly breakdown sections
+   *
+   * Parses content with the following structure:
+   * ## W06 (02/03~02/09)
+   * > **마일스톤**: Demo (02/07)
+   * ### 🚀 이번 주 시작
+   * - [ ] task...
+   * ### 📅 이번 주 마감
+   * - (없음)
+   * ### 🎯 마일스톤
+   * - **02/07 Demo**: description
+   *
+   * Also handles grouped weeks: ## W01~W04 (01/01~01/26)
+   * with nested ### W03 (01/13~01/19) subsections
+   *
+   * @param content - Full markdown content of a Task Master file
+   * @returns Array of WeeklyBreakdown sorted by weekNumber
+   */
+  public parseWeeklyBreakdowns(content: string): WeeklyBreakdown[] {
+    const breakdowns: WeeklyBreakdown[] = [];
+
+    // Default header patterns (can be overridden by config)
+    const newTasksHeaders = ['🚀 이번 주 시작', 'Started this week', 'New this week', '🚀'];
+    const dueTasksHeaders = ['📅 이번 주 마감', 'Due this week', 'Deadlines', '📅'];
+    const milestonesHeaders = ['🎯 마일스톤', 'Milestones', '🎯'];
+
+    // Split content into top-level week sections (## W...)
+    const sectionPattern = /^## W(\d+)(?:~W(\d+))?\s*\(([^)]+)\)/gm;
+    const sectionStarts: { weekNum: number; endWeekNum: number | null; weekRange: string; startIndex: number }[] = [];
+    let sectionMatch;
+
+    while ((sectionMatch = sectionPattern.exec(content)) !== null) {
+      sectionStarts.push({
+        weekNum: parseInt(sectionMatch[1]),
+        endWeekNum: sectionMatch[2] ? parseInt(sectionMatch[2]) : null,
+        weekRange: sectionMatch[3],
+        startIndex: sectionMatch.index,
+      });
+    }
+
+    // Process each top-level section
+    for (let i = 0; i < sectionStarts.length; i++) {
+      const sectionStart = sectionStarts[i];
+      const sectionEnd = i + 1 < sectionStarts.length ? sectionStarts[i + 1].startIndex : content.length;
+      const sectionContent = content.substring(sectionStart.startIndex, sectionEnd);
+
+      // Check for nested week subsections (### W03 inside ## W01~W04)
+      const nestedPattern = /^### W(\d+)\s*\(([^)]+)\)/gm;
+      const nestedSections: { weekNum: number; weekRange: string; startIndex: number }[] = [];
+      let nestedMatch;
+
+      while ((nestedMatch = nestedPattern.exec(sectionContent)) !== null) {
+        nestedSections.push({
+          weekNum: parseInt(nestedMatch[1]),
+          weekRange: nestedMatch[2],
+          startIndex: nestedMatch.index,
+        });
+      }
+
+      if (nestedSections.length > 0) {
+        // Process each nested subsection
+        for (let j = 0; j < nestedSections.length; j++) {
+          const nestedStart = nestedSections[j];
+          const nestedEnd = j + 1 < nestedSections.length ? nestedSections[j + 1].startIndex : sectionContent.length;
+          const nestedContent = sectionContent.substring(nestedStart.startIndex, nestedEnd);
+
+          const breakdown = this.parseWeekSection(
+            nestedStart.weekNum,
+            nestedStart.weekRange,
+            nestedContent,
+            newTasksHeaders,
+            dueTasksHeaders,
+            milestonesHeaders
+          );
+          breakdowns.push(breakdown);
+        }
+      } else {
+        // Single week section
+        const breakdown = this.parseWeekSection(
+          sectionStart.weekNum,
+          sectionStart.weekRange,
+          sectionContent,
+          newTasksHeaders,
+          dueTasksHeaders,
+          milestonesHeaders
+        );
+        breakdowns.push(breakdown);
+      }
+    }
+
+    // Sort by weekNumber
+    breakdowns.sort((a, b) => a.weekNumber - b.weekNumber);
+    return breakdowns;
+  }
+
+  /**
+   * Parse a single week section into a WeeklyBreakdown
+   */
+  private parseWeekSection(
+    weekNumber: number,
+    weekRange: string,
+    sectionContent: string,
+    newTasksHeaders: string[],
+    dueTasksHeaders: string[],
+    milestonesHeaders: string[]
+  ): WeeklyBreakdown {
+    const newTasks = this.extractSubsectionTasks(sectionContent, newTasksHeaders);
+    const dueTasks = this.extractSubsectionTasks(sectionContent, dueTasksHeaders);
+    const milestones = this.extractSubsectionMilestones(sectionContent, milestonesHeaders);
+
+    // Set weekNumber on all extracted tasks
+    for (const task of newTasks) {
+      task.weekNumber = weekNumber;
+    }
+    for (const task of dueTasks) {
+      task.weekNumber = weekNumber;
+    }
+
+    return {
+      weekNumber,
+      weekRange,
+      newTasks,
+      dueTasks,
+      milestones,
+    };
+  }
+
+  /**
+   * Extract tasks from a subsection identified by header patterns
+   * Reuses existing extractTasks() for the actual task parsing
+   */
+  private extractSubsectionTasks(sectionContent: string, headerPatterns: string[]): Task[] {
+    const lines = sectionContent.split('\n');
+    let inSubsection = false;
+    const subsectionLines: string[] = [];
+
+    for (const line of lines) {
+      // Check if this line is a header matching our patterns
+      if (/^#{2,4}\s+/.test(line)) {
+        const headerText = line.replace(/^#{2,4}\s+/, '');
+        if (headerPatterns.some(pattern => headerText.includes(pattern))) {
+          inSubsection = true;
+          continue;
+        } else if (inSubsection) {
+          // Hit a different header, stop collecting
+          break;
+        }
+      }
+
+      if (inSubsection) {
+        // Skip empty/none lines
+        const trimmed = line.trim();
+        if (trimmed === '- (없음)' || trimmed === '- (none)') {
+          continue;
+        }
+        subsectionLines.push(line);
+      }
+    }
+
+    if (subsectionLines.length === 0) return [];
+
+    // Use existing extractTasks to parse the collected lines
+    return this.extractTasks(subsectionLines.join('\n'));
+  }
+
+  /**
+   * Extract milestone text items from a subsection
+   */
+  private extractSubsectionMilestones(sectionContent: string, headerPatterns: string[]): string[] {
+    const lines = sectionContent.split('\n');
+    let inSubsection = false;
+    const milestones: string[] = [];
+
+    for (const line of lines) {
+      if (/^#{2,4}\s+/.test(line)) {
+        const headerText = line.replace(/^#{2,4}\s+/, '');
+        if (headerPatterns.some(pattern => headerText.includes(pattern))) {
+          inSubsection = true;
+          continue;
+        } else if (inSubsection) {
+          break;
+        }
+      }
+
+      if (inSubsection) {
+        const trimmed = line.trim();
+        if (trimmed === '- (없음)' || trimmed === '- (none)') {
+          continue;
+        }
+        // Extract bullet text (remove leading - and bold markers)
+        if (trimmed.startsWith('-')) {
+          const text = trimmed.replace(/^-\s*/, '').trim();
+          if (text) {
+            milestones.push(text);
+          }
+        }
+      }
+    }
+
+    return milestones;
+  }
+
+  /**
+   * Parse customer requests from markdown content
+   *
+   * Expected format:
+   * ## 우선순위 1 (필수)
+   * | No. | 요청 내용 | 상세 | 반영 기능 | 분기 | 상태 | 연결 작업 |
+   * |-----|----------|------|-----------|------|------|-----------|
+   * | 3   | title   | ... | feature  | Q1   | 🔄   | [[link]] |
+   *
+   * @param content - Full markdown content of a customer requests file
+   * @returns Array of CustomerRequest
+   */
+  public parseCustomerRequests(content: string): CustomerRequest[] {
+    const requests: CustomerRequest[] = [];
+
+    // Split by priority sections
+    const sectionPattern = /^## (?:우선순위|Priority)\s+(\d+)/gm;
+    const sectionStarts: { priority: number; startIndex: number }[] = [];
+    let sectionMatch;
+
+    while ((sectionMatch = sectionPattern.exec(content)) !== null) {
+      sectionStarts.push({
+        priority: parseInt(sectionMatch[1]),
+        startIndex: sectionMatch.index,
+      });
+    }
+
+    for (let i = 0; i < sectionStarts.length; i++) {
+      const sectionStart = sectionStarts[i];
+      const sectionEnd = i + 1 < sectionStarts.length ? sectionStarts[i + 1].startIndex : content.length;
+      const sectionContent = content.substring(sectionStart.startIndex, sectionEnd);
+
+      // Parse tables in this section
+      const tableRows = this.parseTableFlexible(sectionContent);
+
+      for (const row of tableRows) {
+        const request: CustomerRequest = {
+          id: row['No.'] || row['no.'] || row['ID'] || row['id'] || '',
+          title: row['요청 내용'] || row['요청내용'] || row['Title'] || row['title'] || row['Request'] || '',
+          priority: sectionStart.priority,
+          status: row['상태'] || row['Status'] || row['status'] || '',
+          linkedFeature: row['반영 기능'] || row['반영기능'] || row['Feature'] || row['feature'] || undefined,
+          dueDate: row['분기'] || row['Quarter'] || row['Due'] || row['기한'] || undefined,
+          description: row['상세'] || row['Description'] || row['description'] || undefined,
+        };
+
+        if (request.id || request.title) {
+          requests.push(request);
+        }
+      }
+    }
+
+    return requests;
+  }
+
+  /**
+   * Parse a markdown table with flexible column detection
+   * Handles tables with varying column counts
+   */
+  private parseTableFlexible(content: string): Record<string, string>[] {
+    const lines = content.split('\n').filter(line => line.includes('|'));
+    if (lines.length < 2) return [];
+
+    // Find the header row (first row with pipes that isn't a separator)
+    let headerLine = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (!lines[i].match(/^\s*\|[\s-:|]+\|\s*$/)) {
+        headerLine = i;
+        break;
+      }
+    }
+    if (headerLine === -1) return [];
+
+    const headers = lines[headerLine]
+      .split('|')
+      .map(cell => cell.trim())
+      .filter(cell => cell.length > 0);
+
+    const rows: Record<string, string>[] = [];
+
+    for (let i = headerLine + 1; i < lines.length; i++) {
+      // Skip separator rows
+      if (lines[i].match(/^\s*\|[\s-:|]+\|\s*$/)) continue;
+
+      const cells = lines[i]
+        .split('|')
+        .map(cell => cell.trim())
+        .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
+
+      // Allow rows with fewer columns than headers
+      if (cells.length > 0) {
+        const row: Record<string, string> = {};
+        for (let j = 0; j < headers.length && j < cells.length; j++) {
+          row[headers[j]] = cells[j];
+        }
+        rows.push(row);
+      }
+    }
+
+    return rows;
+  }
+
+  /**
+   * Parse Mermaid Gantt chart blocks from markdown content
+   *
+   * Expected format:
+   * ```mermaid
+   * gantt
+   *     title Q1 로드맵 (W01~W13)
+   *     dateFormat YYYY-MM-DD
+   *     section P0 필수
+   *     데이터 개선 (C3)       :done, 2026-01-13, 2026-02-28
+   *     스냅샷 리포트 (C2)      :active, 2026-01-27, 2026-02-28
+   *     즐겨찾기 (B1)          :2026-02-24, 2026-03-15
+   *     section 마일스톤
+   *     Demo                  :milestone, 2026-02-07, 0d
+   * ```
+   *
+   * @param content - Full markdown content containing Mermaid gantt blocks
+   * @returns Array of GanttItem
+   */
+  public parseMermaidGantt(content: string): GanttItem[] {
+    const items: GanttItem[] = [];
+
+    // Extract mermaid blocks containing gantt
+    const mermaidPattern = /```mermaid\s*\n([\s\S]*?)```/g;
+    let blockMatch;
+
+    while ((blockMatch = mermaidPattern.exec(content)) !== null) {
+      const blockContent = blockMatch[1];
+
+      // Only process gantt blocks
+      if (!blockContent.trim().startsWith('gantt')) continue;
+
+      const lines = blockContent.split('\n');
+      let currentSection = '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+
+        // Skip directives
+        if (
+          trimmed.startsWith('gantt') ||
+          trimmed.startsWith('title ') ||
+          trimmed.startsWith('dateFormat ') ||
+          trimmed.startsWith('axisFormat ') ||
+          trimmed.startsWith('tickInterval ') ||
+          trimmed === '' ||
+          trimmed.startsWith('%%')
+        ) {
+          continue;
+        }
+
+        // Section header
+        const sectionMatch = trimmed.match(/^section\s+(.+)$/);
+        if (sectionMatch) {
+          currentSection = sectionMatch[1].trim();
+          continue;
+        }
+
+        // Task line: name :status, startDate, endDate
+        // or: name :startDate, endDate
+        const taskMatch = trimmed.match(/^(.+?)\s*:(.+)$/);
+        if (taskMatch) {
+          const name = taskMatch[1].trim();
+          const specPart = taskMatch[2].trim();
+          const parts = specPart.split(',').map(p => p.trim());
+
+          let status: 'done' | 'active' | 'planned' | 'milestone' = 'planned';
+          let startDate = '';
+          let endDate = '';
+
+          if (parts.length >= 2) {
+            const firstPart = parts[0].toLowerCase();
+
+            // Check if first part is a status keyword
+            if (['done', 'active', 'milestone'].includes(firstPart)) {
+              status = firstPart as 'done' | 'active' | 'milestone';
+              startDate = parts[1] || '';
+              endDate = parts[2] || '';
+            } else if (firstPart.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              // First part is a date, no explicit status
+              startDate = parts[0];
+              endDate = parts[1] || '';
+            } else {
+              // Could be an ID like "task1", skip it and use remaining parts
+              startDate = parts[1] || parts[0] || '';
+              endDate = parts[2] || parts[1] || '';
+            }
+          }
+
+          items.push({
+            name,
+            section: currentSection,
+            status,
+            startDate,
+            endDate,
+          });
+        }
+      }
+    }
+
+    return items;
   }
 }

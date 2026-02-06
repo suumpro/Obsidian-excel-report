@@ -164,6 +164,140 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
           await configManager?.updateSources({ roadmap: value });
         }));
 
+    // ===== Task Master Sources Section =====
+    containerEl.createEl('h3', { text: 'Task Master Sources' });
+
+    new Setting(containerEl)
+      .setName('Q1 Task Master 경로')
+      .setDesc('Q1 Task Master 파일 경로')
+      .addText(text => text
+        .setPlaceholder('JIRA/Q1_Tasks.md')
+        .setValue((sourcesConfig as any)?.taskMasters?.q1 || '')
+        .onChange(async (value) => {
+          await configManager?.updateSources({
+            taskMasters: { ...(sourcesConfig as any)?.taskMasters, q1: value }
+          } as any);
+        }));
+
+    new Setting(containerEl)
+      .setName('Q2 Task Master 경로')
+      .setDesc('Q2 Task Master 파일 경로')
+      .addText(text => text
+        .setPlaceholder('JIRA/Q2_Tasks.md')
+        .setValue((sourcesConfig as any)?.taskMasters?.q2 || '')
+        .onChange(async (value) => {
+          await configManager?.updateSources({
+            taskMasters: { ...(sourcesConfig as any)?.taskMasters, q2: value }
+          } as any);
+        }));
+
+    new Setting(containerEl)
+      .setName('Q3 Task Master 경로')
+      .setDesc('Q3 Task Master 파일 경로')
+      .addText(text => text
+        .setPlaceholder('JIRA/Q3_Tasks.md')
+        .setValue((sourcesConfig as any)?.taskMasters?.q3 || '')
+        .onChange(async (value) => {
+          await configManager?.updateSources({
+            taskMasters: { ...(sourcesConfig as any)?.taskMasters, q3: value }
+          } as any);
+        }));
+
+    new Setting(containerEl)
+      .setName('Q4 Task Master 경로')
+      .setDesc('Q4 Task Master 파일 경로')
+      .addText(text => text
+        .setPlaceholder('JIRA/Q4_Tasks.md')
+        .setValue((sourcesConfig as any)?.taskMasters?.q4 || '')
+        .onChange(async (value) => {
+          await configManager?.updateSources({
+            taskMasters: { ...(sourcesConfig as any)?.taskMasters, q4: value }
+          } as any);
+        }));
+
+    new Setting(containerEl)
+      .setName('Task Master Index 경로')
+      .setDesc('Task Master Index 파일 경로')
+      .addText(text => text
+        .setPlaceholder('JIRA/Index.md')
+        .setValue((sourcesConfig as any)?.taskMasters?.index || '')
+        .onChange(async (value) => {
+          await configManager?.updateSources({
+            taskMasters: { ...(sourcesConfig as any)?.taskMasters, index: value }
+          } as any);
+        }));
+
+    new Setting(containerEl)
+      .setName('고객 요청 파일 경로')
+      .setDesc('Customer Requests 파일 경로')
+      .addText(text => text
+        .setPlaceholder('Customer_Requests.md')
+        .setValue((sourcesConfig as any)?.customerRequests || '')
+        .onChange(async (value) => {
+          await configManager?.updateSources({ customerRequests: value } as any);
+        }));
+
+    // ===== Output Configuration Section =====
+    containerEl.createEl('h3', { text: 'Output Configuration' });
+
+    const outputConfig = configManager?.getOutputConfig();
+
+    new Setting(containerEl)
+      .setName('주간 리포트 하위 폴더')
+      .setDesc('주간 리포트 출력 하위 폴더명')
+      .addText(text => text
+        .setPlaceholder('weekly')
+        .setValue(outputConfig?.weeklySubdir || '')
+        .onChange(async (value) => {
+          const config = configManager?.get();
+          if (config) {
+            (config as any).output = { ...outputConfig, weeklySubdir: value };
+            await this.plugin.saveSettings();
+          }
+        }));
+
+    new Setting(containerEl)
+      .setName('분기 리포트 하위 폴더')
+      .setDesc('분기별 리포트 출력 하위 폴더명')
+      .addText(text => text
+        .setPlaceholder('quarterly')
+        .setValue(outputConfig?.quarterlySubdir || '')
+        .onChange(async (value) => {
+          const config = configManager?.get();
+          if (config) {
+            (config as any).output = { ...outputConfig, quarterlySubdir: value };
+            await this.plugin.saveSettings();
+          }
+        }));
+
+    new Setting(containerEl)
+      .setName('기능 리포트 하위 폴더')
+      .setDesc('기능별 리포트 출력 하위 폴더명')
+      .addText(text => text
+        .setPlaceholder('features')
+        .setValue(outputConfig?.featureSubdir || '')
+        .onChange(async (value) => {
+          const config = configManager?.get();
+          if (config) {
+            (config as any).output = { ...outputConfig, featureSubdir: value };
+            await this.plugin.saveSettings();
+          }
+        }));
+
+    new Setting(containerEl)
+      .setName('블로커 리포트 하위 폴더')
+      .setDesc('블로커 리포트 출력 하위 폴더명')
+      .addText(text => text
+        .setPlaceholder('blockers')
+        .setValue(outputConfig?.blockerSubdir || '')
+        .onChange(async (value) => {
+          const config = configManager?.get();
+          if (config) {
+            (config as any).output = { ...outputConfig, blockerSubdir: value };
+            await this.plugin.saveSettings();
+          }
+        }));
+
     // ===== Reports Section =====
     containerEl.createEl('h3', { text: 'Reports' });
 

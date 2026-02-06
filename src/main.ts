@@ -148,6 +148,32 @@ export default class ExcelAutomationPlugin extends Plugin {
   }
 
   /**
+   * Get output path for a report, routing to appropriate subdirectory
+   */
+  private getOutputPath(reportType: 'weekly' | 'quarterly' | 'feature' | 'blocker', filename: string): string {
+    const sourcesConfig = this.configManager.getSources();
+    const outputDir = sourcesConfig.outputDir || this.settings.outputDir;
+
+    // Check for output config with subdirectories
+    const output = this.configManager.getOutputConfig();
+
+    if (output) {
+      const subdirMap: Record<string, string> = {
+        weekly: output.weeklySubdir || '',
+        quarterly: output.quarterlySubdir || '',
+        feature: output.featureSubdir || '',
+        blocker: output.blockerSubdir || '',
+      };
+      const subdir = subdirMap[reportType];
+      if (subdir) {
+        return `${outputDir}/${subdir}/${filename}`;
+      }
+    }
+
+    return `${outputDir}/${filename}`;
+  }
+
+  /**
    * Show report menu (simple version - generates weekly by default)
    */
   private async showReportMenu() {
@@ -189,9 +215,8 @@ export default class ExcelAutomationPlugin extends Plugin {
       progress.nextStep(); // Skip to last step for saving
 
       // Save to vault
-      const sourcesConfig = this.configManager.getSources();
-      const outputDir = sourcesConfig.outputDir || this.settings.outputDir;
-      const outputPath = `${outputDir}/${filename}`;
+      const outputPath = this.getOutputPath('weekly', filename);
+      await this.vaultService.ensureFolderExists(outputPath);
       await this.vaultService.createBinaryFile(outputPath, buffer);
 
       const elapsed = progress.getElapsedTime();
@@ -235,9 +260,8 @@ export default class ExcelAutomationPlugin extends Plugin {
       progress.nextStep(); // Move to save step
 
       // Save to vault
-      const sourcesConfig = this.configManager.getSources();
-      const outputDir = sourcesConfig.outputDir || this.settings.outputDir;
-      const outputPath = `${outputDir}/${filename}`;
+      const outputPath = this.getOutputPath('quarterly', filename);
+      await this.vaultService.ensureFolderExists(outputPath);
       await this.vaultService.createBinaryFile(outputPath, buffer);
 
       const elapsed = progress.getElapsedTime();
@@ -281,9 +305,8 @@ export default class ExcelAutomationPlugin extends Plugin {
       progress.nextStep(); // Move to save step
 
       // Save to vault
-      const sourcesConfig = this.configManager.getSources();
-      const outputDir = sourcesConfig.outputDir || this.settings.outputDir;
-      const outputPath = `${outputDir}/${filename}`;
+      const outputPath = this.getOutputPath('feature', filename);
+      await this.vaultService.ensureFolderExists(outputPath);
       await this.vaultService.createBinaryFile(outputPath, buffer);
 
       const elapsed = progress.getElapsedTime();
@@ -327,9 +350,8 @@ export default class ExcelAutomationPlugin extends Plugin {
       progress.nextStep(); // Move to save step
 
       // Save to vault
-      const sourcesConfig = this.configManager.getSources();
-      const outputDir = sourcesConfig.outputDir || this.settings.outputDir;
-      const outputPath = `${outputDir}/${filename}`;
+      const outputPath = this.getOutputPath('blocker', filename);
+      await this.vaultService.ensureFolderExists(outputPath);
       await this.vaultService.createBinaryFile(outputPath, buffer);
 
       const elapsed = progress.getElapsedTime();
