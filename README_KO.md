@@ -50,7 +50,7 @@
 
 ```bash
 # 저장소 클론
-git clone https://github.com/jaminpark/obsidian-excel-automation.git
+git clone https://github.com/suumpro/Obsidian-excel-report.git
 cd obsidian-excel-automation
 
 # 의존성 설치
@@ -541,7 +541,7 @@ A: 현재 버전은 테이블 기반 보고서만 지원합니다. 차트 기능
 
 ```bash
 # 저장소 포크 및 클론
-git clone https://github.com/jaminpark/obsidian-excel-automation.git
+git clone https://github.com/suumpro/Obsidian-excel-report.git
 cd obsidian-excel-automation
 
 # 의존성 설치
@@ -591,5 +591,5 @@ SOFTWARE.
 
 **제작**: Jamin Park
 **최종 업데이트**: 2026-02-06
-**GitHub**: https://github.com/jaminpark/obsidian-excel-automation
+**GitHub**: https://github.com/suumpro/Obsidian-excel-report
 **버전**: 3.1.0

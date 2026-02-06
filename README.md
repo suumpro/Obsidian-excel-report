@@ -57,7 +57,7 @@ This Obsidian plugin automatically converts your markdown task management files 
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/jaminpark/obsidian-excel-automation.git
+   git clone https://github.com/suumpro/Obsidian-excel-report.git
    cd obsidian-excel-automation
    ```
 
@@ -510,8 +510,8 @@ await plugin.generateBlockerReport();
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/jaminpark/obsidian-excel-automation/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/jaminpark/obsidian-excel-automation/discussions)
+- **Issues**: [GitHub Issues](https://github.com/suumpro/Obsidian-excel-report/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/suumpro/Obsidian-excel-report/discussions)
 
 ---
 
