@@ -6,6 +6,7 @@
 import { Task } from '../types/models';
 import { DashboardData, RoadmapData, BlockerData, QuarterlyData, Metrics, emptyMetrics } from '../types/data';
 import { isOverdue, isThisWeek } from '../utils/dateUtils';
+import { isCompleted, isInProgress, isPending, isResolved } from '../utils/statusUtils';
 
 export class MetricsCalculator {
   /**
@@ -79,15 +80,15 @@ export class MetricsCalculator {
     const total = features.length;
 
     const inProgress = features.filter(f =>
-      f.status === '진행중' || f.status === 'In Progress'
+      isInProgress(f.status)
     ).length;
 
     const completed = features.filter(f =>
-      f.status === '완료' || f.status === 'Completed'
+      isCompleted(f.status)
     ).length;
 
     const pending = features.filter(f =>
-      f.status === '대기' || f.status === 'Pending'
+      isPending(f.status)
     ).length;
 
     return {
@@ -105,7 +106,7 @@ export class MetricsCalculator {
     const blockers = blockerData.allBlockers;
 
     const resolved = blockers.filter(b =>
-      b.status.includes('해결') || b.status.includes('Resolved') || b.status.includes('✅')
+      isResolved(b.status)
     ).length;
 
     return {

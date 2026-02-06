@@ -97,6 +97,42 @@
       "validationError": "バリデーションエラー",
       "loading": "読み込み中...",
       "noData": "データがありません"
+    },
+    "customerRequests": {
+      "sheetName": "顧客要望",
+      "trackingSheetName": "顧客要望追跡",
+      "title": "顧客要望状況",
+      "trackingTitle": "顧客要望追跡",
+      "totalRequests": "全リクエスト",
+      "completionRate": "完了率",
+      "requestContent": "要望内容",
+      "linkedFeature": "関連機能",
+      "linkedTask": "関連タスク",
+      "priorityRequired": "必須 (P1)",
+      "priorityImportant": "重要 (P2)",
+      "priorityNormal": "通常 (P3)",
+      "priorityDeferred": "保留 (P4)",
+      "byPriorityStatus": "優先度別状況",
+      "allRequestsList": "全リクエスト一覧",
+      "number": "No."
+    },
+    "weeklyBreakdown": {
+      "sheetName": "週次進捗",
+      "title": "週次進捗状況",
+      "summary": "週次サマリー",
+      "period": "期間",
+      "newTasks": "新規タスク",
+      "dueTasks": "期限タスク",
+      "milestone": "マイルストーン",
+      "newStart": "新規開始",
+      "dueUpcoming": "期限予定",
+      "milestoneLabel": "マイルストーン",
+      "theme": "テーマ",
+      "targetAcceptance": "目標受入率"
+    },
+    "units": {
+      "count": "件",
+      "items": "個"
     }
   },
   "parsing": {

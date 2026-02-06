@@ -4,19 +4,21 @@
  * v2.0 - Added Japanese and Minimal presets
  */
 
-import { PluginConfig, LocaleCode } from '../../types/config';
+import { PluginConfig, LocaleCode, LocaleStrings } from '../../types/config';
 import koreanDefault from './korean-default.json';
 import englishDefault from './english-default.json';
 import japaneseDefault from './japanese-default.json';
 import minimal from './minimal.json';
+import universalDefault from './universal-default.json';
 
-export type PresetName = 'korean-default' | 'english-default' | 'japanese-default' | 'minimal';
+export type PresetName = 'korean-default' | 'english-default' | 'japanese-default' | 'minimal' | 'universal-default';
 
 const presets: Record<PresetName, PluginConfig> = {
   'korean-default': koreanDefault as unknown as PluginConfig,
   'english-default': englishDefault as unknown as PluginConfig,
   'japanese-default': japaneseDefault as unknown as PluginConfig,
   'minimal': minimal as unknown as PluginConfig,
+  'universal-default': universalDefault as unknown as PluginConfig,
 };
 
 /**
@@ -29,14 +31,16 @@ export function getPreset(name: PresetName | LocaleCode | string): PluginConfig 
     'ko': 'korean-default',
     'en': 'english-default',
     'ja': 'japanese-default',
+    'universal': 'universal-default',
     'custom': 'minimal',
     'korean-default': 'korean-default',
     'english-default': 'english-default',
     'japanese-default': 'japanese-default',
     'minimal': 'minimal',
+    'universal-default': 'universal-default',
   };
 
-  const presetName = localeToPreset[name] || 'korean-default';
+  const presetName = localeToPreset[name] || 'universal-default';
   const preset = presets[presetName as PresetName];
 
   // Return a deep copy to prevent mutation
@@ -59,6 +63,7 @@ export function getPresetDisplayNames(): Record<PresetName, string> {
     'english-default': 'English',
     'japanese-default': '日本語 (Japanese)',
     'minimal': 'Minimal',
+    'universal-default': 'Universal (Default)',
   };
 }
 
@@ -73,5 +78,14 @@ export function isValidPreset(name: string): name is PresetName {
  * Get the default preset name
  */
 export function getDefaultPresetName(): PresetName {
-  return 'korean-default';
+  return 'universal-default';
+}
+
+/**
+ * Get default locale strings (English)
+ * Shared fallback for all report generators when no ConfigManager is provided
+ */
+export function getDefaultLocaleStrings(): LocaleStrings {
+  const preset = getPreset('english-default');
+  return preset.localeStrings;
 }

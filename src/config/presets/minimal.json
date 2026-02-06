@@ -97,6 +97,42 @@
       "validationError": "Error",
       "loading": "Loading...",
       "noData": "No data"
+    },
+    "customerRequests": {
+      "sheetName": "Requests",
+      "trackingSheetName": "Request Tracking",
+      "title": "Request Status",
+      "trackingTitle": "Request Tracking",
+      "totalRequests": "Total",
+      "completionRate": "Rate",
+      "requestContent": "Content",
+      "linkedFeature": "Feature",
+      "linkedTask": "Task",
+      "priorityRequired": "P1",
+      "priorityImportant": "P2",
+      "priorityNormal": "P3",
+      "priorityDeferred": "P4",
+      "byPriorityStatus": "By Priority",
+      "allRequestsList": "All",
+      "number": "#"
+    },
+    "weeklyBreakdown": {
+      "sheetName": "Weekly",
+      "title": "Weekly Progress",
+      "summary": "Summary",
+      "period": "Period",
+      "newTasks": "New",
+      "dueTasks": "Due",
+      "milestone": "MS",
+      "newStart": "Start",
+      "dueUpcoming": "Due",
+      "milestoneLabel": "MS",
+      "theme": "Theme",
+      "targetAcceptance": "Target"
+    },
+    "units": {
+      "count": "",
+      "items": ""
     }
   },
   "parsing": {

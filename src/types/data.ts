@@ -6,7 +6,7 @@
 import { Task, Feature, Blocker, Priority } from './models';
 
 /**
- * Coordination item for Lawson協議 sheet
+ * Coordination item for coordination sheet
  */
 export interface CoordinationItem {
   /** Category: 긴급확인, 데이터, 시스템 */

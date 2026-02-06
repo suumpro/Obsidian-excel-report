@@ -5,6 +5,7 @@
 
 import ExcelJS from 'exceljs';
 import { StylingOptions } from '../types/settings';
+import { isCompleted, isInProgress, isPending } from '../utils/statusUtils';
 
 /**
  * Manages cell styling for Excel generation
@@ -167,25 +168,11 @@ export class StyleManager {
    * Apply status-based style to a cell
    */
   applyStatusStyle(cell: ExcelJS.Cell, status: string): void {
-    const lowerStatus = status.toLowerCase();
-
-    if (
-      lowerStatus.includes('완료') ||
-      lowerStatus.includes('complete') ||
-      status.includes('✅')
-    ) {
+    if (isCompleted(status)) {
       cell.fill = this.completedFill;
-    } else if (
-      lowerStatus.includes('진행') ||
-      lowerStatus.includes('progress') ||
-      status.includes('🔄')
-    ) {
+    } else if (isInProgress(status)) {
       cell.fill = this.inProgressFill;
-    } else if (
-      lowerStatus.includes('대기') ||
-      lowerStatus.includes('pending') ||
-      status.includes('⚠️')
-    ) {
+    } else if (isPending(status) || status.includes('⚠️')) {
       cell.fill = this.pendingFill;
     }
 

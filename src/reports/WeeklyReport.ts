@@ -1,6 +1,6 @@
 /**
  * Weekly Report Generator
- * Generates 9-sheet weekly report in Lawson format
+ * Generates 9-sheet weekly status report
  * Equivalent to Python reports/weekly_report.py
  * v2.0 - Enhanced with ConfigManager for i18n
  * v3.0 - Added Executive Summary dashboard as first sheet
@@ -13,10 +13,12 @@ import { ConfigManager } from '../services/ConfigManager';
 import { MetricsCalculator } from '../services/MetricsCalculator';
 import { ExcelAutomationSettings } from '../types/settings';
 import { LocaleStrings } from '../types/config';
+import { getDefaultLocaleStrings } from '../config/presets';
 import { DashboardData, RoadmapData, BlockerData, QuarterlyData, Metrics, CoordinationItem, MilestoneItem, PlaybookItem, TaskMasterData, WeeklyBreakdown, CustomerRequestData, CustomerRequest } from '../types/data';
 import { Task, WeekInfo, Priority, Blocker } from '../types/models';
 import { getCurrentWeekInfo, formatDate, getWeekRange } from '../utils/dateUtils';
 import { logger } from '../utils/logger';
+import { isResolved, isInProgress, isScheduled, isBlocker, isCompleted } from '../utils/statusUtils';
 import { ChartBuilder } from '../generators/ChartBuilder';
 import { ExecutiveSummary } from '../types/parsing';
 
@@ -33,46 +35,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
     super(settings, configManager);
     this.aggregator = aggregator || new DataAggregator(app, settings, configManager);
     // Get locale strings or use defaults
-    this.localeStrings = configManager?.getLocaleStrings() || this.getDefaultLocaleStrings();
-  }
-
-  /**
-   * Default locale strings for backward compatibility
-   */
-  private getDefaultLocaleStrings(): LocaleStrings {
-    return {
-      reports: { weekly: '주간 리포트', quarterly: '분기 리포트', feature: '피처 리포트', blocker: '블로커 리포트' },
-      sheets: {
-        weeklySummary: '주간현황', roadmapProgress: '로드맵진척', taskDetails: '작업상세',
-        blockerTracking: '블로커추적', coordination: '협의사항', milestones: '마일스톤',
-        playbookProgress: '플레이북진척', quarterlyOverview: '분기 개요', p0Tasks: 'P0 작업',
-        p1Tasks: 'P1 작업', progressAnalytics: '진척 분석', allFeatures: '전체 피처',
-        byPriority: '우선순위별', byCycle: '사이클별', activeBlockers: '활성 블로커', blockerHistory: '블로커 이력',
-      },
-      columns: {
-        id: 'ID', name: '작업명', owner: '담당자', status: '상태', deadline: '마감일',
-        priority: '우선순위', description: '설명', category: '구분', content: '협의내용',
-        target: '목표', current: '현재', percentage: '진척률', risk: '위험', date: '날짜',
-        cycle: '사이클', impact: '영향', resolution: '해결책', quarter: '분기', week: '주차',
-      },
-      kpi: {
-        totalTasks: '전체 작업', completed: '완료', p0CompletionRate: 'P0 완료율', blockers: '블로커',
-        activeBlockers: '활성 블로커', resolvedBlockers: '해결된 블로커', totalFeatures: '전체 피처',
-        inProgress: '진행중', pending: '대기',
-      },
-      status: { completed: '완료', inProgress: '진행중', pending: '대기', resolved: '해결', unresolved: '미해결' },
-      priority: { p0: 'P0', p1: 'P1', p2: 'P2', high: '높음', medium: '중간', low: '낮음' },
-      ui: {
-        generateReport: '리포트 생성', settings: '설정', language: '언어', parsingRules: '파싱 규칙',
-        reportSchema: '리포트 스키마', presets: '프리셋', importExport: '가져오기/내보내기',
-        reset: '초기화', save: '저장', cancel: '취소', apply: '적용',
-      },
-      messages: {
-        reportGenerated: '리포트가 생성되었습니다', reportFailed: '리포트 생성 실패',
-        settingsSaved: '설정이 저장되었습니다', presetApplied: '프리셋이 적용되었습니다',
-        validationError: '유효성 검사 오류', loading: '로딩중...', noData: '데이터가 없습니다',
-      },
-    };
+    this.localeStrings = configManager?.getLocaleStrings() || getDefaultLocaleStrings();
   }
 
   /**
@@ -134,7 +97,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
     this.createSheet4Blockers(blockers);
 
     logger.debug(`Creating Sheet 6: ${sheets.coordination}`);
-    this.createSheet5LawsonCoordination(dashboard.coordination || []);
+    this.createSheet5Coordination(dashboard.coordination || []);
 
     logger.debug(`Creating Sheet 7: ${sheets.milestones}`);
     this.createSheet6Milestones(dashboard.milestones || []);
@@ -142,7 +105,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
     logger.debug(`Creating Sheet 8: ${sheets.playbookProgress}`);
     this.createSheet7PlaybookProgress(dashboard.playbook || []);
 
-    logger.debug('Creating Sheet 9: 고객요청현황');
+    logger.debug(`Creating Sheet 9: ${this.localeStrings.customerRequests.sheetName}`);
     this.createSheet8CustomerRequests(customerRequests);
 
     logger.info('Weekly report generated successfully with Executive Summary');
@@ -171,7 +134,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
 
     // Get top blockers (unresolved, sorted by priority)
     const topBlockers = blockers.allBlockers
-      .filter(b => !b.status.includes('해결') && !b.status.includes('Resolved'))
+      .filter(b => !isResolved(b.status))
       .slice(0, 5)
       .map(b => ({
         id: b.id,
@@ -219,7 +182,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
       kpis: {
         totalTasks: metrics.totalTasks,
         completedTasks: metrics.completedTasks,
-        activeBlockers: blockers.allBlockers.filter(b => !b.status.includes('해결') && !b.status.includes('Resolved')).length,
+        activeBlockers: blockers.allBlockers.filter(b => !isResolved(b.status)).length,
         totalFeatures: roadmap.features.length,
         completionRate: metrics.completionRate,
       },
@@ -660,7 +623,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
    * Sheet 5: Coordination Items
    * Uses localized strings for sheet name and headers
    */
-  private createSheet5LawsonCoordination(coordination: CoordinationItem[]): void {
+  private createSheet5Coordination(coordination: CoordinationItem[]): void {
     const sheets = this.localeStrings.sheets;
     const cols = this.localeStrings.columns;
     const ws = this.addSheet(sheets.coordination);
@@ -681,15 +644,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
    * Uses localized strings for status and priority values
    */
   private getDefaultCoordinationData(): string[][] {
-    const priority = this.localeStrings.priority;
-    const status = this.localeStrings.status;
-    return [
-      ['Urgent', 'B4 Checklist system verification', priority.high, 'Lawson', 'Q1', status.pending],
-      ['Urgent', 'B6 Cloud cost/security Go/No-Go', priority.high, 'Lawson', 'Q2', status.inProgress],
-      ['Data', 'Snapshot storage/usage policy', priority.medium, 'Lawson', 'Q1', status.pending],
-      ['Data', 'Weather/schedule sample dataset', priority.medium, 'Lawson', 'Q1', status.pending],
-      ['System', 'POS data integration scope', priority.medium, 'Lawson', 'Q2', status.pending],
-    ];
+    return [];
   }
 
   /**
@@ -717,15 +672,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
    * Uses localized strings for status and risk values
    */
   private getDefaultMilestoneData(): string[][] {
-    const status = this.localeStrings.status;
-    const priority = this.localeStrings.priority;
-    return [
-      ['2/7', 'Demo', 'Weather MCP, Report integration', status.inProgress, priority.low],
-      ['2/15', 'Q1 Midpoint', 'P0 50% complete', status.pending, priority.medium],
-      ['2/28', 'Snapshot Complete', 'Report integration', status.pending, priority.medium],
-      ['3/15', 'Briefing Feature', 'Auto-send feature', status.pending, priority.low],
-      ['3/31', 'Q1 Final Review', 'P0 100% complete', status.pending, priority.medium],
-    ];
+    return [];
   }
 
   /**
@@ -781,8 +728,8 @@ export class WeeklyReportGenerator extends ExcelGenerator {
     const data = playbook.length > 0
       ? playbook.map(p => [
           p.name,
-          `${p.target}개`,
-          `${p.current}개`,
+          `${p.target}${this.localeStrings.units.items}`,
+          `${p.current}${this.localeStrings.units.items}`,
           `${p.percentage}%`,
           p.status,
         ])
@@ -813,13 +760,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
    * Default playbook progress items when no parsed data available
    */
   private getDefaultPlaybookProgressItems(): { label: string; current: number; total: number; color: string }[] {
-    return [
-      { label: 'Golden Case', current: 0, total: 10, color: 'FFC7CE' },
-      { label: 'Playbook', current: 1, total: 2, color: 'FFEB9C' },
-      { label: 'D1 템플릿', current: 1, total: 1, color: 'C6EFCE' },
-      { label: 'D2-D4 개발', current: 0, total: 3, color: 'FFC7CE' },
-      { label: 'R1-R5 조사', current: 0, total: 5, color: 'FFC7CE' },
-    ];
+    return [];
   }
 
   /**
@@ -827,14 +768,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
    * Uses localized strings for status values
    */
   private getDefaultPlaybookTableData(): string[][] {
-    const status = this.localeStrings.status;
-    return [
-      ['Golden Case', '10', '0', '0%', status.inProgress],
-      ['Playbook', '2', '2 Draft', '50%', status.inProgress],
-      ['D1 Template', '1', '1', '100%', status.completed],
-      ['D2-D4 Dev', '3', '0', '0%', status.pending],
-      ['R1-R5 Research', '5', '0', '0%', status.pending],
-    ];
+    return [];
   }
 
   /**
@@ -842,14 +776,14 @@ export class WeeklyReportGenerator extends ExcelGenerator {
    * Shows customer request tracking with priority breakdown
    */
   private createSheet8CustomerRequests(customerData: CustomerRequestData): void {
-    const ws = this.addSheet('고객요청현황');
+    const ws = this.addSheet(this.localeStrings.customerRequests.sheetName);
     const sm = this.getStyleManager();
     const cols = this.localeStrings.columns;
     let row = 1;
 
     // Title
     const titleCell = ws.getCell(row, 1);
-    sm.applyTitleStyle(titleCell, `고객 요청 현황 - ${customerData.customer || 'N/A'}`);
+    sm.applyTitleStyle(titleCell, `${this.localeStrings.customerRequests.title} - ${customerData.customer || 'N/A'}`);
     this.mergeCells(ws, row, 1, row, 7);
     this.setRowHeight(ws, row, 30);
     row++;
@@ -860,17 +794,17 @@ export class WeeklyReportGenerator extends ExcelGenerator {
     const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
     const metaCell = ws.getCell(row, 1);
-    metaCell.value = `전체: ${total}건 | 완료: ${completed}건 (${rate}%)`;
+    metaCell.value = `${this.localeStrings.customerRequests.totalRequests}: ${total}${this.localeStrings.units.count} | ${this.localeStrings.kpi.completed}: ${completed}${this.localeStrings.units.count} (${rate}%)`;
     metaCell.font = { size: 10, color: { argb: 'FF666666' }, italic: true };
     this.mergeCells(ws, row, 1, row, 7);
     row += 2;
 
     // KPI Boxes
     const kpiBoxes = [
-      { label: '전체 요청', value: total, color: 'D9E1F2' },
-      { label: '완료', value: completed, color: 'C6EFCE' },
-      { label: '진행중', value: total - completed, color: completed < total ? 'FFEB9C' : 'C6EFCE' },
-      { label: '완료율', value: `${rate}%`, color: rate >= 50 ? 'C6EFCE' : 'FFC7CE' },
+      { label: this.localeStrings.customerRequests.totalRequests, value: total, color: 'D9E1F2' },
+      { label: this.localeStrings.kpi.completed, value: completed, color: 'C6EFCE' },
+      { label: this.localeStrings.kpi.inProgress, value: total - completed, color: completed < total ? 'FFEB9C' : 'C6EFCE' },
+      { label: this.localeStrings.customerRequests.completionRate, value: `${rate}%`, color: rate >= 50 ? 'C6EFCE' : 'FFC7CE' },
     ];
     row = ChartBuilder.addKPIBoxes(ws, kpiBoxes, row, 1, 4);
     row += 2;
@@ -884,11 +818,12 @@ export class WeeklyReportGenerator extends ExcelGenerator {
     }
 
     // Priority sections
+    const cr = this.localeStrings.customerRequests;
     const priorityLabels: Record<number, string> = {
-      1: '우선순위 1 (필수)',
-      2: '우선순위 2 (중요)',
-      3: '우선순위 3 (일반)',
-      4: '우선순위 4 (보류)',
+      1: cr.priorityRequired,
+      2: cr.priorityImportant,
+      3: cr.priorityNormal,
+      4: cr.priorityDeferred,
     };
 
     const priorityColors: Record<number, string> = {
@@ -904,12 +839,12 @@ export class WeeklyReportGenerator extends ExcelGenerator {
 
       // Section header
       const sectionHeader = ws.getCell(row, 1);
-      sm.applySubheaderStyle(sectionHeader, priorityLabels[priority] || `우선순위 ${priority}`);
+      sm.applySubheaderStyle(sectionHeader, priorityLabels[priority] || `P${priority}`);
       this.mergeCells(ws, row, 1, row, 7);
       row++;
 
       // Table headers
-      const headers = ['No.', '요청 내용', '반영 기능', '분기', cols.status, '연결 작업'];
+      const headers = [cr.number, cr.requestContent, cr.linkedFeature, cols.quarter, cols.status, cr.linkedTask];
       for (let i = 0; i < headers.length; i++) {
         const cell = ws.getCell(row, i + 1);
         cell.value = headers[i];
@@ -935,13 +870,13 @@ export class WeeklyReportGenerator extends ExcelGenerator {
 
         // Color status cell
         const statusStr = req.status;
-        if (statusStr.includes('🔄') || statusStr.includes('진행')) {
+        if (isInProgress(statusStr)) {
           ws.getCell(row, 5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEB9C' } };
-        } else if (statusStr.includes('📅') || statusStr.includes('예정')) {
+        } else if (isScheduled(statusStr)) {
           ws.getCell(row, 5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
-        } else if (statusStr.includes('⚠️') || statusStr.includes('블로커')) {
+        } else if (isBlocker(statusStr)) {
           ws.getCell(row, 5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC7CE' } };
-        } else if (statusStr.includes('✅') || statusStr.includes('완료')) {
+        } else if (isCompleted(statusStr)) {
           ws.getCell(row, 5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC6EFCE' } };
         }
         row++;

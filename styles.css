@@ -8,3 +8,100 @@
 .excel-automation-settings .setting-item-description {
   color: var(--text-muted);
 }
+
+/* Setup Wizard */
+.excel-automation-wizard .modal-content {
+  padding: 20px;
+}
+
+.wizard-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.wizard-header h2 {
+  margin-bottom: 8px;
+}
+
+.wizard-progress {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.wizard-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--background-modifier-border);
+  display: inline-block;
+}
+
+.wizard-dot.active {
+  background: var(--interactive-accent);
+}
+
+.wizard-dot.completed {
+  background: var(--text-success);
+}
+
+.wizard-step-label {
+  color: var(--text-muted);
+  font-size: 0.85em;
+}
+
+.wizard-content {
+  min-height: 200px;
+  margin-bottom: 20px;
+}
+
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.wizard-skip {
+  font-size: 0.85em;
+  color: var(--text-muted);
+  cursor: pointer;
+  position: absolute;
+  bottom: 12px;
+  right: 20px;
+}
+
+.wizard-summary {
+  background: var(--background-secondary);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 12px 0;
+}
+
+.wizard-summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.wizard-summary-row:last-child {
+  border-bottom: none;
+}
+
+.wizard-summary-label {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.wizard-summary-value {
+  color: var(--text-muted);
+}
+
+.wizard-hint {
+  font-size: 0.85em;
+  color: var(--text-muted);
+  font-style: italic;
+}

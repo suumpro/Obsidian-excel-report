@@ -7,6 +7,7 @@
 import { App, Notice, Plugin, addIcon } from 'obsidian';
 import { ExcelAutomationSettings, DEFAULT_SETTINGS } from './types/settings';
 import { ExcelAutomationSettingsTab } from './ui/SettingsTab';
+import { SetupWizardModal } from './ui/SetupWizardModal';
 import { WeeklyReportGenerator } from './reports/WeeklyReport';
 import { QuarterlyReportGenerator } from './reports/QuarterlyReport';
 import { FeatureReportGenerator } from './reports/FeatureReport';
@@ -14,8 +15,10 @@ import { BlockerReportGenerator } from './reports/BlockerReport';
 import { DataAggregator } from './services/DataAggregator';
 import { VaultService } from './services/VaultService';
 import { ConfigManager } from './services/ConfigManager';
+import { PathValidator } from './services/PathValidator';
 import { getCurrentWeekInfo, getCurrentQuarterInfo } from './utils/dateUtils';
 import { logger, showSuccess, showError, showProgress } from './utils/logger';
+import { resolveFilename } from './utils/pathUtils';
 import {
   ProgressReporter,
   WEEKLY_REPORT_STEPS,
@@ -33,7 +36,7 @@ export default class ExcelAutomationPlugin extends Plugin {
   configManager: ConfigManager;
 
   async onload() {
-    logger.info('Loading Excel Automation Plugin v3.0');
+    logger.info('Loading Excel Automation Plugin v4.0');
 
     // Initialize ConfigManager first (handles v1 migration)
     this.configManager = new ConfigManager(this);
@@ -98,12 +101,51 @@ export default class ExcelAutomationPlugin extends Plugin {
       },
     });
 
+    this.addCommand({
+      id: 'open-setup-wizard',
+      name: 'Open Setup Wizard',
+      callback: () => {
+        new SetupWizardModal(this.app, this.configManager).open();
+      },
+    });
+
+    this.addCommand({
+      id: 'validate-paths',
+      name: 'Validate Source File Paths',
+      callback: () => {
+        const validator = new PathValidator(this.app, this.settings, this.configManager);
+        const results = validator.validateAll();
+        const messages: string[] = [];
+        for (const [type, result] of Object.entries(results)) {
+          messages.push(validator.formatResult(result, type));
+        }
+        const summary = messages.join('\n\n');
+        if (Object.values(results).every(r => r.valid)) {
+          showSuccess('All paths validated successfully!');
+        } else {
+          showError(summary);
+        }
+        logger.info(`Path validation results:\n${summary}`);
+      },
+    });
+
     // Add settings tab (pass configManager for v2 settings)
     this.addSettingTab(new ExcelAutomationSettingsTab(this.app, this));
 
     // Log current locale
     const locale = this.configManager.getLocale();
     logger.info(`Excel Automation Plugin loaded (locale: ${locale})`);
+
+    // Show setup wizard on first run (all paths empty)
+    const sources = this.configManager.getSources();
+    const hasAnyPath = sources.basePath || sources.dashboard || sources.roadmap ||
+      sources.blockers || sources.features || sources.outputDir;
+    if (!hasAnyPath) {
+      // Delay slightly to let Obsidian UI settle
+      setTimeout(() => {
+        new SetupWizardModal(this.app, this.configManager).open();
+      }, 1000);
+    }
   }
 
   onunload() {
@@ -194,6 +236,16 @@ export default class ExcelAutomationPlugin extends Plugin {
       return;
     }
 
+    // Validate paths before generating
+    const validator = new PathValidator(this.app, this.settings, this.configManager);
+    const validation = validator.validate('weekly');
+    if (!validation.valid) {
+      const msg = validator.formatResult(validation, 'Weekly Report');
+      logger.warn(msg);
+      showError(`Missing source files for weekly report. Check Settings.\n${validation.missingRequired.join(', ')}`);
+      return;
+    }
+
     const progress = new ProgressReporter(WEEKLY_REPORT_STEPS);
     progress.start();
 
@@ -202,9 +254,11 @@ export default class ExcelAutomationPlugin extends Plugin {
       const generator = new WeeklyReportGenerator(this.app, this.settings, aggregator, this.configManager);
 
       const weekInfo = getCurrentWeekInfo();
-      const filename = (reportsConfig.weekly.filename || this.settings.reports.weekly.filenameFormat)
-        .replace('{week}', weekInfo.formattedWeek)
-        .replace('{date}', weekInfo.formattedDate.replace(/-/g, ''));
+      const projectName = this.configManager.getSources().projectName || '';
+      const filename = resolveFilename(
+        reportsConfig.weekly.filename || this.settings.reports.weekly.filenameFormat,
+        { project: projectName, year: weekInfo.year, week: weekInfo.formattedWeek, date: weekInfo.formattedDate.replace(/-/g, '') }
+      );
 
       logger.debug(`Generating weekly report: ${filename}`);
 
@@ -249,9 +303,21 @@ export default class ExcelAutomationPlugin extends Plugin {
       const generator = new QuarterlyReportGenerator(this.app, this.settings, aggregator, this.configManager);
 
       const quarterInfo = getCurrentQuarterInfo();
-      const filename = (reportsConfig.quarterly.filename || this.settings.reports.quarterly.filenameFormat)
-        .replace('{quarter}', String(quarterInfo.quarter))
-        .replace('{date}', quarterInfo.formattedDate.replace(/-/g, ''));
+
+      // Validate paths before generating
+      const validator = new PathValidator(this.app, this.settings, this.configManager);
+      const validation = validator.validate('quarterly', quarterInfo.quarter);
+      if (!validation.valid) {
+        const msg = validator.formatResult(validation, 'Quarterly Report');
+        logger.warn(msg);
+        showError(`Missing source files for quarterly report. Check Settings.\n${validation.missingRequired.join(', ')}`);
+        return;
+      }
+      const projectName = this.configManager.getSources().projectName || '';
+      const filename = resolveFilename(
+        reportsConfig.quarterly.filename || this.settings.reports.quarterly.filenameFormat,
+        { project: projectName, year: quarterInfo.year, quarter: quarterInfo.quarter, date: quarterInfo.formattedDate.replace(/-/g, '') }
+      );
 
       logger.debug(`Generating quarterly report: ${filename}`);
 
@@ -286,6 +352,16 @@ export default class ExcelAutomationPlugin extends Plugin {
       return;
     }
 
+    // Validate paths before generating
+    const validator = new PathValidator(this.app, this.settings, this.configManager);
+    const validation = validator.validate('feature');
+    if (!validation.valid) {
+      const msg = validator.formatResult(validation, 'Feature Report');
+      logger.warn(msg);
+      showError(`Missing source files for feature report. Check Settings.\n${validation.missingRequired.join(', ')}`);
+      return;
+    }
+
     const progress = new ProgressReporter(FEATURE_REPORT_STEPS);
     progress.start();
 
@@ -295,8 +371,11 @@ export default class ExcelAutomationPlugin extends Plugin {
 
       const date = new Date();
       const formattedDate = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
-      const filename = (reportsConfig.feature.filename || this.settings.reports.features.filenameFormat)
-        .replace('{date}', formattedDate);
+      const projectName = this.configManager.getSources().projectName || '';
+      const filename = resolveFilename(
+        reportsConfig.feature.filename || this.settings.reports.features.filenameFormat,
+        { project: projectName, year: date.getFullYear(), date: formattedDate }
+      );
 
       logger.debug(`Generating feature report: ${filename}`);
 
@@ -331,6 +410,16 @@ export default class ExcelAutomationPlugin extends Plugin {
       return;
     }
 
+    // Validate paths before generating
+    const validator = new PathValidator(this.app, this.settings, this.configManager);
+    const validation = validator.validate('blocker');
+    if (!validation.valid) {
+      const msg = validator.formatResult(validation, 'Blocker Report');
+      logger.warn(msg);
+      showError(`Missing source files for blocker report. Check Settings.\n${validation.missingRequired.join(', ')}`);
+      return;
+    }
+
     const progress = new ProgressReporter(BLOCKER_REPORT_STEPS);
     progress.start();
 
@@ -340,8 +429,11 @@ export default class ExcelAutomationPlugin extends Plugin {
 
       const date = new Date();
       const formattedDate = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
-      const filename = (reportsConfig.blocker.filename || this.settings.reports.blockers.filenameFormat)
-        .replace('{date}', formattedDate);
+      const projectName = this.configManager.getSources().projectName || '';
+      const filename = resolveFilename(
+        reportsConfig.blocker.filename || this.settings.reports.blockers.filenameFormat,
+        { project: projectName, year: date.getFullYear(), date: formattedDate }
+      );
 
       logger.debug(`Generating blocker report: ${filename}`);
 

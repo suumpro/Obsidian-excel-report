@@ -6,7 +6,7 @@
 // ============================================
 // CONFIGURATION VERSION
 // ============================================
-export const CONFIG_VERSION = '2.1';
+export const CONFIG_VERSION = '4.0';
 
 // ============================================
 // LOCALE TYPES
@@ -125,6 +125,48 @@ export interface LocaleStrings {
     validationError: string;
     loading: string;
     noData: string;
+  };
+
+  // Customer Requests (v4.0)
+  customerRequests: {
+    sheetName: string;
+    trackingSheetName: string;
+    title: string;
+    trackingTitle: string;
+    totalRequests: string;
+    completionRate: string;
+    requestContent: string;
+    linkedFeature: string;
+    linkedTask: string;
+    priorityRequired: string;
+    priorityImportant: string;
+    priorityNormal: string;
+    priorityDeferred: string;
+    byPriorityStatus: string;
+    allRequestsList: string;
+    number: string;
+  };
+
+  // Weekly Breakdown (v4.0)
+  weeklyBreakdown: {
+    sheetName: string;
+    title: string;
+    summary: string;
+    period: string;
+    newTasks: string;
+    dueTasks: string;
+    milestone: string;
+    newStart: string;
+    dueUpcoming: string;
+    milestoneLabel: string;
+    theme: string;
+    targetAcceptance: string;
+  };
+
+  // Units / Suffixes (v4.0)
+  units: {
+    count: string;
+    items: string;
   };
 }
 
@@ -320,6 +362,7 @@ export interface LayoutConfig {
 export interface SourceMappings {
   basePath: string;
   outputDir: string;
+  projectName?: string;
   dashboard: string;
   quarterly: {
     q1: string;

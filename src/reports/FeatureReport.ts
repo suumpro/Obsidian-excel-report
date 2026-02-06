@@ -15,7 +15,9 @@ import { RoadmapData } from '../types/data';
 import { Feature, Priority } from '../types/models';
 import { formatDate } from '../utils/dateUtils';
 import { logger } from '../utils/logger';
+import { isCompleted, isInProgress, isPending } from '../utils/statusUtils';
 import { ChartBuilder } from '../generators/ChartBuilder';
+import { getDefaultLocaleStrings } from '../config/presets';
 
 export class FeatureReportGenerator extends ExcelGenerator {
   private aggregator: DataAggregator;
@@ -29,43 +31,7 @@ export class FeatureReportGenerator extends ExcelGenerator {
   ) {
     super(settings, configManager);
     this.aggregator = aggregator || new DataAggregator(app, settings, configManager);
-    this.localeStrings = configManager?.getLocaleStrings() || this.getDefaultLocaleStrings();
-  }
-
-  private getDefaultLocaleStrings(): LocaleStrings {
-    return {
-      reports: { weekly: '주간 리포트', quarterly: '분기 리포트', feature: '피처 리포트', blocker: '블로커 리포트' },
-      sheets: {
-        weeklySummary: '주간현황', roadmapProgress: '로드맵진척', taskDetails: '작업상세',
-        blockerTracking: '블로커추적', coordination: '협의사항', milestones: '마일스톤',
-        playbookProgress: '플레이북진척', quarterlyOverview: '분기 개요', p0Tasks: 'P0 작업',
-        p1Tasks: 'P1 작업', progressAnalytics: '진척 분석', allFeatures: '전체 피처',
-        byPriority: '우선순위별', byCycle: '사이클별', activeBlockers: '활성 블로커', blockerHistory: '블로커 이력',
-      },
-      columns: {
-        id: 'ID', name: '작업명', owner: '담당자', status: '상태', deadline: '마감일',
-        priority: '우선순위', description: '설명', category: '구분', content: '협의내용',
-        target: '목표', current: '현재', percentage: '진척률', risk: '위험', date: '날짜',
-        cycle: '사이클', impact: '영향', resolution: '해결책', quarter: '분기', week: '주차',
-      },
-      kpi: {
-        totalTasks: '전체 작업', completed: '완료', p0CompletionRate: 'P0 완료율', blockers: '블로커',
-        activeBlockers: '활성 블로커', resolvedBlockers: '해결된 블로커', totalFeatures: '전체 피처',
-        inProgress: '진행중', pending: '대기',
-      },
-      status: { completed: '완료', inProgress: '진행중', pending: '대기', resolved: '해결', unresolved: '미해결' },
-      priority: { p0: 'P0', p1: 'P1', p2: 'P2', high: '높음', medium: '중간', low: '낮음' },
-      ui: {
-        generateReport: '리포트 생성', settings: '설정', language: '언어', parsingRules: '파싱 규칙',
-        reportSchema: '리포트 스키마', presets: '프리셋', importExport: '가져오기/내보내기',
-        reset: '초기화', save: '저장', cancel: '취소', apply: '적용',
-      },
-      messages: {
-        reportGenerated: '리포트가 생성되었습니다', reportFailed: '리포트 생성 실패',
-        settingsSaved: '설정이 저장되었습니다', presetApplied: '프리셋이 적용되었습니다',
-        validationError: '유효성 검사 오류', loading: '로딩중...', noData: '데이터가 없습니다',
-      },
-    };
+    this.localeStrings = configManager?.getLocaleStrings() || getDefaultLocaleStrings();
   }
 
   /**
@@ -122,9 +88,9 @@ export class FeatureReportGenerator extends ExcelGenerator {
 
     // Calculate metrics - check both Korean and English status values
     const features = roadmap.features;
-    const completed = features.filter(f => f.status === status.completed || f.status === '완료' || f.status === 'Completed').length;
-    const inProgress = features.filter(f => f.status === status.inProgress || f.status === '진행중' || f.status === 'In Progress').length;
-    const pending = features.filter(f => f.status === status.pending || f.status === '대기' || f.status === 'Pending').length;
+    const completed = features.filter(f => isCompleted(f.status)).length;
+    const inProgress = features.filter(f => isInProgress(f.status)).length;
+    const pending = features.filter(f => isPending(f.status)).length;
     const avgProgress = features.length > 0
       ? Math.round(features.reduce((sum, f) => sum + f.progress, 0) / features.length)
       : 0;
@@ -237,8 +203,8 @@ export class FeatureReportGenerator extends ExcelGenerator {
     const summaryHeaders = [cols.priority, kpiLabels.totalTasks, kpiLabels.completed, kpiLabels.inProgress, cols.percentage];
     const summaryData = priorityGroups.map(({ priority, label }) => {
       const features = roadmap.featuresByPriority[priority] || [];
-      const completedCount = features.filter(f => f.status === status.completed || f.status === '완료' || f.status === 'Completed').length;
-      const inProgressCount = features.filter(f => f.status === status.inProgress || f.status === '진행중' || f.status === 'In Progress').length;
+      const completedCount = features.filter(f => isCompleted(f.status)).length;
+      const inProgressCount = features.filter(f => isInProgress(f.status)).length;
       const rate = features.length > 0 ? Math.round((completedCount / features.length) * 100) : 0;
       return [label, features.length, completedCount, inProgressCount, `${rate}%`];
     });
@@ -255,7 +221,7 @@ export class FeatureReportGenerator extends ExcelGenerator {
     // Stacked Comparison Chart
     const priorityItems = priorityGroups.map(({ priority, label }) => {
       const features = roadmap.featuresByPriority[priority] || [];
-      const completedCount = features.filter(f => f.status === status.completed || f.status === '완료' || f.status === 'Completed').length;
+      const completedCount = features.filter(f => isCompleted(f.status)).length;
       return {
         label,
         completed: completedCount,
@@ -350,7 +316,7 @@ export class FeatureReportGenerator extends ExcelGenerator {
     const summaryHeaders = [cols.cycle, kpiLabels.totalFeatures, kpiLabels.completed, cols.percentage, cols.status];
     const summaryData = sortedCycles.map(cycle => {
       const features = cycleGroups[cycle];
-      const completedCount = features.filter(f => f.status === status.completed || f.status === '완료' || f.status === 'Completed').length;
+      const completedCount = features.filter(f => isCompleted(f.status)).length;
       const avgProgress = Math.round(features.reduce((sum, f) => sum + f.progress, 0) / features.length);
       const allComplete = completedCount === features.length;
       const cycleStatus = allComplete ? status.completed : completedCount > 0 ? status.inProgress : status.pending;
@@ -362,7 +328,7 @@ export class FeatureReportGenerator extends ExcelGenerator {
     // Apply status styling to summary
     for (let i = 0; i < sortedCycles.length; i++) {
       const features = cycleGroups[sortedCycles[i]];
-      const completedCount = features.filter(f => f.status === status.completed || f.status === '완료' || f.status === 'Completed').length;
+      const completedCount = features.filter(f => isCompleted(f.status)).length;
       const cycleStatus = completedCount === features.length ? status.completed : completedCount > 0 ? status.inProgress : status.pending;
       sm.applyStatusStyle(ws.getCell(row - sortedCycles.length + i - 1, 5), cycleStatus);
     }
@@ -380,7 +346,7 @@ export class FeatureReportGenerator extends ExcelGenerator {
       if (cycle === 'Unassigned') continue;
 
       const features = cycleGroups[cycle];
-      const completedCount = features.filter(f => f.status === status.completed || f.status === '완료' || f.status === 'Completed').length;
+      const completedCount = features.filter(f => isCompleted(f.status)).length;
 
       // Determine color based on completion percentage
       const percentage = features.length > 0 ? (completedCount / features.length) * 100 : 0;
@@ -399,7 +365,7 @@ export class FeatureReportGenerator extends ExcelGenerator {
     const completedByAllCycles = sortedCycles
       .filter(c => c !== 'Unassigned')
       .reduce((sum, cycle) => {
-        return sum + cycleGroups[cycle].filter(f => f.status === status.completed || f.status === '완료' || f.status === 'Completed').length;
+        return sum + cycleGroups[cycle].filter(f => isCompleted(f.status)).length;
       }, 0);
 
     row = ChartBuilder.addCompletionRing(ws, 'Overall Cycle Progress', completedByAllCycles, totalByAllCycles, row, 1);

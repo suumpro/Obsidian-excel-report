@@ -394,9 +394,9 @@ describe('Presets', () => {
       expect(preset.version).toBe('2.0');
     });
 
-    it('should fallback to korean-default for unknown preset', () => {
+    it('should fallback to universal-default for unknown preset', () => {
       const preset = getPreset('unknown-preset');
-      expect(preset.locale).toBe('ko');
+      expect(preset.locale).toBe('en');
     });
 
     it('should return deep copy (mutation does not affect original)', () => {
@@ -412,14 +412,14 @@ describe('Presets', () => {
   });
 
   describe('getPresetNames', () => {
-    it('should return all 4 preset names', () => {
+    it('should return all 5 preset names', () => {
       const names = getPresetNames();
-      expect(names).toEqual([
-        'korean-default',
-        'english-default',
-        'japanese-default',
-        'minimal',
-      ]);
+      expect(names).toContain('korean-default');
+      expect(names).toContain('english-default');
+      expect(names).toContain('japanese-default');
+      expect(names).toContain('minimal');
+      expect(names).toContain('universal-default');
+      expect(names).toHaveLength(5);
     });
   });
 
@@ -430,6 +430,7 @@ describe('Presets', () => {
       expect(displayNames['english-default']).toBeDefined();
       expect(displayNames['japanese-default']).toBeDefined();
       expect(displayNames['minimal']).toBeDefined();
+      expect(displayNames['universal-default']).toBeDefined();
     });
   });
 
@@ -439,6 +440,7 @@ describe('Presets', () => {
       expect(isValidPreset('english-default')).toBe(true);
       expect(isValidPreset('japanese-default')).toBe(true);
       expect(isValidPreset('minimal')).toBe(true);
+      expect(isValidPreset('universal-default')).toBe(true);
     });
 
     it('should return false for invalid preset names', () => {
@@ -450,8 +452,8 @@ describe('Presets', () => {
   });
 
   describe('getDefaultPresetName', () => {
-    it('should return korean-default', () => {
-      expect(getDefaultPresetName()).toBe('korean-default');
+    it('should return universal-default', () => {
+      expect(getDefaultPresetName()).toBe('universal-default');
     });
   });
 });

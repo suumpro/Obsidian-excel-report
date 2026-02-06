@@ -16,7 +16,9 @@ import { QuarterlyData, Metrics, TaskMasterData, WeeklyBreakdown, CustomerReques
 import { QuarterInfo, Task } from '../types/models';
 import { getCurrentQuarterInfo, formatDate, isOverdue } from '../utils/dateUtils';
 import { logger } from '../utils/logger';
+import { isCompleted, isInProgress, isScheduled } from '../utils/statusUtils';
 import { ChartBuilder } from '../generators/ChartBuilder';
+import { getDefaultLocaleStrings } from '../config/presets';
 
 export class QuarterlyReportGenerator extends ExcelGenerator {
   private aggregator: DataAggregator;
@@ -30,44 +32,7 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
   ) {
     super(settings, configManager);
     this.aggregator = aggregator || new DataAggregator(app, settings, configManager);
-    this.localeStrings = configManager?.getLocaleStrings() || this.getDefaultLocaleStrings();
-  }
-
-  private getDefaultLocaleStrings(): LocaleStrings {
-    // Return Korean defaults for backward compatibility
-    return {
-      reports: { weekly: '주간 리포트', quarterly: '분기 리포트', feature: '피처 리포트', blocker: '블로커 리포트' },
-      sheets: {
-        weeklySummary: '주간현황', roadmapProgress: '로드맵진척', taskDetails: '작업상세',
-        blockerTracking: '블로커추적', coordination: '협의사항', milestones: '마일스톤',
-        playbookProgress: '플레이북진척', quarterlyOverview: '분기 개요', p0Tasks: 'P0 작업',
-        p1Tasks: 'P1 작업', progressAnalytics: '진척 분석', allFeatures: '전체 피처',
-        byPriority: '우선순위별', byCycle: '사이클별', activeBlockers: '활성 블로커', blockerHistory: '블로커 이력',
-      },
-      columns: {
-        id: 'ID', name: '작업명', owner: '담당자', status: '상태', deadline: '마감일',
-        priority: '우선순위', description: '설명', category: '구분', content: '협의내용',
-        target: '목표', current: '현재', percentage: '진척률', risk: '위험', date: '날짜',
-        cycle: '사이클', impact: '영향', resolution: '해결책', quarter: '분기', week: '주차',
-      },
-      kpi: {
-        totalTasks: '전체 작업', completed: '완료', p0CompletionRate: 'P0 완료율', blockers: '블로커',
-        activeBlockers: '활성 블로커', resolvedBlockers: '해결된 블로커', totalFeatures: '전체 피처',
-        inProgress: '진행중', pending: '대기',
-      },
-      status: { completed: '완료', inProgress: '진행중', pending: '대기', resolved: '해결', unresolved: '미해결' },
-      priority: { p0: 'P0', p1: 'P1', p2: 'P2', high: '높음', medium: '중간', low: '낮음' },
-      ui: {
-        generateReport: '리포트 생성', settings: '설정', language: '언어', parsingRules: '파싱 규칙',
-        reportSchema: '리포트 스키마', presets: '프리셋', importExport: '가져오기/내보내기',
-        reset: '초기화', save: '저장', cancel: '취소', apply: '적용',
-      },
-      messages: {
-        reportGenerated: '리포트가 생성되었습니다', reportFailed: '리포트 생성 실패',
-        settingsSaved: '설정이 저장되었습니다', presetApplied: '프리셋이 적용되었습니다',
-        validationError: '유효성 검사 오류', loading: '로딩중...', noData: '데이터가 없습니다',
-      },
-    };
+    this.localeStrings = configManager?.getLocaleStrings() || getDefaultLocaleStrings();
   }
 
   /**
@@ -107,10 +72,10 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
     logger.debug('Creating Sheet 4: Progress Analytics');
     this.createSheet4Analytics(q1Data, metrics as Metrics);
 
-    logger.debug('Creating Sheet 5: 주차별 진척');
+    logger.debug('Creating Sheet 5: Weekly Breakdown');
     this.createSheet5WeeklyBreakdown(taskMaster);
 
-    logger.debug('Creating Sheet 6: 고객요청 추적');
+    logger.debug('Creating Sheet 6: Customer Requests');
     this.createSheet6CustomerRequests(customerRequests);
 
     logger.info('Quarterly report generated successfully');
@@ -130,13 +95,14 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
     const sheets = this.localeStrings.sheets;
     const kpiLabels = this.localeStrings.kpi;
     const cols = this.localeStrings.columns;
+    const projectName = this.configManager?.getSources()?.projectName;
     const ws = this.addSheet(sheets.quarterlyOverview);
     const sm = this.getStyleManager();
     let row = 1;
 
     // Title
     const titleCell = ws.getCell(row, 1);
-    sm.applyTitleStyle(titleCell, `STOREAGENT Q${quarter} ${year} ${this.localeStrings.reports.quarterly}`);
+    sm.applyTitleStyle(titleCell, `${projectName ? projectName + ' ' : ''}Q${quarter} ${year} ${this.localeStrings.reports.quarterly}`);
     this.mergeCells(ws, row, 1, row, 6);
     this.setRowHeight(ws, row, 30);
     row++;
@@ -408,7 +374,8 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
    * Shows task progress per week within the quarter
    */
   private createSheet5WeeklyBreakdown(taskMaster: TaskMasterData): void {
-    const ws = this.addSheet('주차별 진척');
+    const wb5 = this.localeStrings.weeklyBreakdown;
+    const ws = this.addSheet(wb5.sheetName);
     const sm = this.getStyleManager();
     const cols = this.localeStrings.columns;
     const status = this.localeStrings.status;
@@ -416,7 +383,7 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
 
     // Title
     const titleCell = ws.getCell(row, 1);
-    sm.applyTitleStyle(titleCell, `Q${taskMaster.quarter} 주차별 진척 현황`);
+    sm.applyTitleStyle(titleCell, `Q${taskMaster.quarter} ${wb5.title}`);
     this.mergeCells(ws, row, 1, row, 7);
     this.setRowHeight(ws, row, 30);
     row++;
@@ -424,7 +391,7 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
     // Theme and target
     if (taskMaster.theme) {
       const themeCell = ws.getCell(row, 1);
-      themeCell.value = `테마: ${taskMaster.theme} | 목표 수락률: ${taskMaster.targetAcceptance}%`;
+      themeCell.value = `${wb5.theme}: ${taskMaster.theme} | ${wb5.targetAcceptance}: ${taskMaster.targetAcceptance}%`;
       themeCell.font = { size: 10, color: { argb: 'FF666666' }, italic: true };
       this.mergeCells(ws, row, 1, row, 7);
       row++;
@@ -441,11 +408,11 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
 
     // Weekly Summary Table
     const summaryHeader = ws.getCell(row, 1);
-    sm.applySubheaderStyle(summaryHeader, '주차별 요약');
+    sm.applySubheaderStyle(summaryHeader, wb5.summary);
     this.mergeCells(ws, row, 1, row, 5);
     row++;
 
-    const summaryHeaders = [cols.week, '기간', '신규 작업', '마감 작업', '마일스톤'];
+    const summaryHeaders = [cols.week, wb5.period, wb5.newTasks, wb5.dueTasks, wb5.milestone];
     const summaryData = taskMaster.weeklyBreakdowns.map(wb => [
       `W${String(wb.weekNumber).padStart(2, '0')}`,
       wb.weekRange,
@@ -468,7 +435,7 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
       // New tasks this week
       if (wb.newTasks.length > 0) {
         const newLabel = ws.getCell(row, 1);
-        newLabel.value = '🚀 신규 시작';
+        newLabel.value = '🚀 ' + wb5.newStart;
         newLabel.font = { bold: true, size: 10 };
         row++;
 
@@ -489,7 +456,7 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
       // Due tasks this week
       if (wb.dueTasks.length > 0) {
         const dueLabel = ws.getCell(row, 1);
-        dueLabel.value = '📅 마감 예정';
+        dueLabel.value = '📅 ' + wb5.dueUpcoming;
         dueLabel.font = { bold: true, size: 10 };
         row++;
 
@@ -510,7 +477,7 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
       // Milestones
       if (wb.milestones.length > 0) {
         const msLabel = ws.getCell(row, 1);
-        msLabel.value = '🎯 마일스톤';
+        msLabel.value = '🎯 ' + wb5.milestoneLabel;
         msLabel.font = { bold: true, size: 10 };
         row++;
 
@@ -533,14 +500,15 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
    * Shows customer request fulfillment status
    */
   private createSheet6CustomerRequests(customerData: CustomerRequestData): void {
-    const ws = this.addSheet('고객요청 추적');
+    const cr = this.localeStrings.customerRequests;
+    const ws = this.addSheet(cr.trackingSheetName);
     const sm = this.getStyleManager();
     const cols = this.localeStrings.columns;
     let row = 1;
 
     // Title
     const titleCell = ws.getCell(row, 1);
-    sm.applyTitleStyle(titleCell, `고객 요청 추적 - ${customerData.customer || 'N/A'}`);
+    sm.applyTitleStyle(titleCell, `${cr.trackingTitle} - ${customerData.customer || 'N/A'}`);
     this.mergeCells(ws, row, 1, row, 6);
     this.setRowHeight(ws, row, 30);
     row++;
@@ -551,13 +519,13 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
     const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
     const metaCell = ws.getCell(row, 1);
-    metaCell.value = `전체: ${total}건 | 완료: ${completed}건 (${rate}%)`;
+    metaCell.value = `${cr.totalRequests}: ${total}${this.localeStrings.units.count} | ${this.localeStrings.kpi.completed}: ${completed}${this.localeStrings.units.count} (${rate}%)`;
     metaCell.font = { size: 10, color: { argb: 'FF666666' }, italic: true };
     this.mergeCells(ws, row, 1, row, 6);
     row += 2;
 
     // Completion ring
-    row = ChartBuilder.addCompletionRing(ws, '고객 요청 완료율', completed, total, row, 1);
+    row = ChartBuilder.addCompletionRing(ws, cr.completionRate, completed, total, row, 1);
     row += 2;
 
     if (customerData.requests.length === 0) {
@@ -570,21 +538,21 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
 
     // Priority breakdown summary
     const breakdownHeader = ws.getCell(row, 1);
-    sm.applySubheaderStyle(breakdownHeader, '우선순위별 현황');
+    sm.applySubheaderStyle(breakdownHeader, cr.byPriorityStatus);
     this.mergeCells(ws, row, 1, row, 4);
     row++;
 
     const priorityLabels: Record<number, string> = {
-      1: '필수 (P1)',
-      2: '중요 (P2)',
-      3: '일반 (P3)',
-      4: '보류 (P4)',
+      1: cr.priorityRequired,
+      2: cr.priorityImportant,
+      3: cr.priorityNormal,
+      4: cr.priorityDeferred,
     };
 
     const priorityItems = [1, 2, 3, 4]
       .map(p => {
         const reqs = customerData.byPriority[p] || [];
-        const done = reqs.filter(r => r.status.includes('✅') || r.status.includes('완료')).length;
+        const done = reqs.filter(r => isCompleted(r.status)).length;
         return {
           label: priorityLabels[p] || `P${p}`,
           completed: done,
@@ -598,11 +566,11 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
 
     // Full request table
     const tableHeader = ws.getCell(row, 1);
-    sm.applySubheaderStyle(tableHeader, '전체 요청 목록');
+    sm.applySubheaderStyle(tableHeader, cr.allRequestsList);
     this.mergeCells(ws, row, 1, row, 6);
     row++;
 
-    const headers = ['No.', '요청 내용', '우선순위', '분기', cols.status, '연결 기능'];
+    const headers = [cr.number, cr.requestContent, cols.priority, cols.quarter, cols.status, cr.linkedFeature];
     const tableData = customerData.requests.map(req => [
       req.id,
       req.title,
@@ -619,13 +587,13 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
       const req = customerData.requests[i];
       const statusCell = ws.getCell(row - tableData.length + i - 1, 5);
       const statusStr = req.status;
-      if (statusStr.includes('🔄') || statusStr.includes('진행')) {
+      if (isInProgress(statusStr)) {
         statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEB9C' } };
-      } else if (statusStr.includes('📅') || statusStr.includes('예정')) {
+      } else if (isScheduled(statusStr)) {
         statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
       } else if (statusStr.includes('⚠️')) {
         statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC7CE' } };
-      } else if (statusStr.includes('✅') || statusStr.includes('완료')) {
+      } else if (isCompleted(statusStr)) {
         statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC6EFCE' } };
       }
     }

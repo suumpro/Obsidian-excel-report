@@ -29,6 +29,7 @@ import {
 } from '../types/data';
 import { Feature, Priority } from '../types/models';
 import { logger } from '../utils/logger';
+import { isCompleted } from '../utils/statusUtils';
 
 export class DataAggregator {
   private vault: VaultService;
@@ -379,13 +380,13 @@ export class DataAggregator {
 
       // Group by priority
       const highPriority = blockers.filter(b =>
-        b.priority === '높음' || b.priority === 'High'
+        ['높음', 'High', '高', 'high'].includes(b.priority)
       );
       const mediumPriority = blockers.filter(b =>
-        b.priority === '중간' || b.priority === 'Medium'
+        ['중간', 'Medium', '中', 'medium'].includes(b.priority)
       );
       const lowPriority = blockers.filter(b =>
-        b.priority === '낮음' || b.priority === 'Low'
+        ['낮음', 'Low', '低', 'low'].includes(b.priority)
       );
 
       // Group by owner
@@ -523,30 +524,20 @@ export class DataAggregator {
 
       // Parse quarterly summary table
       const quarterSummaries: { quarter: number; period: string; theme: string; target: string; status: string }[] = [];
-      const tableRows = this.parser.parseTable(body, '분기별');
+      // Try English heading first, then Korean fallback
+      let tableRows = this.parser.parseTable(body, 'Quarterly');
       if (tableRows.length === 0) {
-        // Try English heading
-        const tableRowsEn = this.parser.parseTable(body, 'Quarterly');
-        tableRowsEn.forEach((row, i) => {
-          quarterSummaries.push({
-            quarter: i + 1,
-            period: row['기간'] || row['Period'] || '',
-            theme: row['테마'] || row['Theme'] || '',
-            target: row['목표'] || row['Target'] || '',
-            status: row['상태'] || row['Status'] || '',
-          });
-        });
-      } else {
-        tableRows.forEach((row, i) => {
-          quarterSummaries.push({
-            quarter: i + 1,
-            period: row['기간'] || row['Period'] || '',
-            theme: row['테마'] || row['Theme'] || '',
-            target: row['목표'] || row['Target'] || '',
-            status: row['상태'] || row['Status'] || '',
-          });
-        });
+        tableRows = this.parser.parseTable(body, '분기별');
       }
+      tableRows.forEach((row, i) => {
+        quarterSummaries.push({
+          quarter: i + 1,
+          period: row['기간'] || row['Period'] || '',
+          theme: row['테마'] || row['Theme'] || '',
+          target: row['목표'] || row['Target'] || '',
+          status: row['상태'] || row['Status'] || '',
+        });
+      });
 
       const data: AnnualMasterData = {
         year: Number(metadata['year']) || new Date().getFullYear(),
@@ -609,7 +600,7 @@ export class DataAggregator {
       }
 
       const completedCount = requests.filter(r =>
-        r.status === '✅' || r.status.includes('완료') || r.status.includes('Complete')
+        isCompleted(r.status)
       ).length;
 
       const data: CustomerRequestData = {

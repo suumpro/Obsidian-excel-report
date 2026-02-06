@@ -289,7 +289,22 @@
     "roadmap": "",
     "betting": "",
     "features": "",
-    "playbook": ""
+    "playbook": "",
+    "taskMasters": {
+      "q1": "",
+      "q2": "",
+      "q3": "",
+      "q4": "",
+      "index": ""
+    },
+    "customerRequests": ""
+  },
+  "output": {
+    "baseDir": "",
+    "weeklySubdir": "",
+    "quarterlySubdir": "",
+    "featureSubdir": "",
+    "blockerSubdir": ""
   },
   "advanced": {
     "weekStartDay": 0,

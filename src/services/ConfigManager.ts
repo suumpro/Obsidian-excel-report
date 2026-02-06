@@ -30,6 +30,7 @@ export class ConfigManager {
   private plugin: Plugin;
   private listeners: Set<ConfigListener> = new Set();
   private initialized: boolean = false;
+  private _isFirstRun: boolean = false;
 
   constructor(plugin: Plugin) {
     this.plugin = plugin;
@@ -52,6 +53,7 @@ export class ConfigManager {
       // First time user - use default preset
       this.config = getPreset(getDefaultPresetName());
       this.config.version = CONFIG_VERSION;
+      this._isFirstRun = true;
     } else if (!savedData.version || savedData.version === '1.0') {
       // V1 user - migrate settings
       this.config = await this.migrateFromV1(savedData);
@@ -173,8 +175,8 @@ export class ConfigManager {
     const upgraded = deepMerge(currentPreset, oldConfig);
 
     // v2.0 → v2.1 migration
-    if (oldConfig.version === '2.0') {
-      console.log('Applying v2.0 → v2.1 migration...');
+    if (oldConfig.version === '2.0' || oldConfig.version === '2.1') {
+      console.log(`Applying ${oldConfig.version} → v3.0 migration...`);
 
       // Add Task Master paths if not present
       if (!upgraded.sources.taskMasters) {
@@ -196,6 +198,11 @@ export class ConfigManager {
           blockerSubdir: '',
         };
       }
+
+      // Add projectName if not present
+      if (!upgraded.sources.projectName) {
+        upgraded.sources.projectName = '';
+      }
     }
 
     upgraded.version = CONFIG_VERSION;
@@ -216,6 +223,13 @@ export class ConfigManager {
   }
 
   // ========== GETTERS ==========
+
+  /**
+   * Whether this is the first time the plugin is loaded (no saved config)
+   */
+  get isFirstRun(): boolean {
+    return this._isFirstRun;
+  }
 
   /**
    * Get the full configuration

@@ -168,8 +168,8 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
     containerEl.createEl('h3', { text: 'Task Master Sources' });
 
     new Setting(containerEl)
-      .setName('Q1 Task Master 경로')
-      .setDesc('Q1 Task Master 파일 경로')
+      .setName('Q1 Task Master Path')
+      .setDesc('Path to Q1 Task Master file')
       .addText(text => text
         .setPlaceholder('JIRA/Q1_Tasks.md')
         .setValue((sourcesConfig as any)?.taskMasters?.q1 || '')
@@ -180,8 +180,8 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         }));
 
     new Setting(containerEl)
-      .setName('Q2 Task Master 경로')
-      .setDesc('Q2 Task Master 파일 경로')
+      .setName('Q2 Task Master Path')
+      .setDesc('Path to Q2 Task Master file')
       .addText(text => text
         .setPlaceholder('JIRA/Q2_Tasks.md')
         .setValue((sourcesConfig as any)?.taskMasters?.q2 || '')
@@ -192,8 +192,8 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         }));
 
     new Setting(containerEl)
-      .setName('Q3 Task Master 경로')
-      .setDesc('Q3 Task Master 파일 경로')
+      .setName('Q3 Task Master Path')
+      .setDesc('Path to Q3 Task Master file')
       .addText(text => text
         .setPlaceholder('JIRA/Q3_Tasks.md')
         .setValue((sourcesConfig as any)?.taskMasters?.q3 || '')
@@ -204,8 +204,8 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         }));
 
     new Setting(containerEl)
-      .setName('Q4 Task Master 경로')
-      .setDesc('Q4 Task Master 파일 경로')
+      .setName('Q4 Task Master Path')
+      .setDesc('Path to Q4 Task Master file')
       .addText(text => text
         .setPlaceholder('JIRA/Q4_Tasks.md')
         .setValue((sourcesConfig as any)?.taskMasters?.q4 || '')
@@ -216,8 +216,8 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         }));
 
     new Setting(containerEl)
-      .setName('Task Master Index 경로')
-      .setDesc('Task Master Index 파일 경로')
+      .setName('Task Master Index Path')
+      .setDesc('Path to Task Master Index file')
       .addText(text => text
         .setPlaceholder('JIRA/Index.md')
         .setValue((sourcesConfig as any)?.taskMasters?.index || '')
@@ -228,8 +228,8 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         }));
 
     new Setting(containerEl)
-      .setName('고객 요청 파일 경로')
-      .setDesc('Customer Requests 파일 경로')
+      .setName('Customer Requests Path')
+      .setDesc('Path to Customer Requests file')
       .addText(text => text
         .setPlaceholder('Customer_Requests.md')
         .setValue((sourcesConfig as any)?.customerRequests || '')
@@ -243,8 +243,8 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
     const outputConfig = configManager?.getOutputConfig();
 
     new Setting(containerEl)
-      .setName('주간 리포트 하위 폴더')
-      .setDesc('주간 리포트 출력 하위 폴더명')
+      .setName('Weekly Report Subdirectory')
+      .setDesc('Subdirectory name for weekly report output')
       .addText(text => text
         .setPlaceholder('weekly')
         .setValue(outputConfig?.weeklySubdir || '')
@@ -257,8 +257,8 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         }));
 
     new Setting(containerEl)
-      .setName('분기 리포트 하위 폴더')
-      .setDesc('분기별 리포트 출력 하위 폴더명')
+      .setName('Quarterly Report Subdirectory')
+      .setDesc('Subdirectory name for quarterly report output')
       .addText(text => text
         .setPlaceholder('quarterly')
         .setValue(outputConfig?.quarterlySubdir || '')
@@ -271,8 +271,8 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         }));
 
     new Setting(containerEl)
-      .setName('기능 리포트 하위 폴더')
-      .setDesc('기능별 리포트 출력 하위 폴더명')
+      .setName('Feature Report Subdirectory')
+      .setDesc('Subdirectory name for feature report output')
       .addText(text => text
         .setPlaceholder('features')
         .setValue(outputConfig?.featureSubdir || '')
@@ -285,8 +285,8 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         }));
 
     new Setting(containerEl)
-      .setName('블로커 리포트 하위 폴더')
-      .setDesc('블로커 리포트 출력 하위 폴더명')
+      .setName('Blocker Report Subdirectory')
+      .setDesc('Subdirectory name for blocker report output')
       .addText(text => text
         .setPlaceholder('blockers')
         .setValue(outputConfig?.blockerSubdir || '')
@@ -305,7 +305,7 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Enable Weekly Report')
-      .setDesc('Generate weekly report with 7 sheets (Lawson format)')
+      .setDesc('Generate weekly report with multiple sheets')
       .addToggle(toggle => toggle
         .setValue(reportsConfig?.weekly.enabled ?? this.plugin.settings.reports.weekly.enabled)
         .onChange(async (value) => {
@@ -316,7 +316,7 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Weekly Report Filename')
-      .setDesc('Filename format for weekly reports. Use {week} and {date} placeholders.')
+      .setDesc('Filename format. Placeholders: {project}, {year}, {week}, {date}')
       .addText(text => text
         .setPlaceholder('Report_W{week}_{date}.xlsx')
         .setValue(reportsConfig?.weekly.filename || this.plugin.settings.reports.weekly.filenameFormat)
@@ -339,7 +339,7 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Quarterly Report Filename')
-      .setDesc('Filename format for quarterly reports. Use {quarter} and {date} placeholders.')
+      .setDesc('Filename format. Placeholders: {project}, {year}, {quarter}, {date}')
       .addText(text => text
         .setPlaceholder('Report_Q{quarter}_{date}.xlsx')
         .setValue(reportsConfig?.quarterly.filename || this.plugin.settings.reports.quarterly.filenameFormat)
@@ -362,7 +362,7 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Feature Report Filename')
-      .setDesc('Filename format for feature reports. Use {date} placeholder.')
+      .setDesc('Filename format. Placeholders: {project}, {year}, {date}')
       .addText(text => text
         .setPlaceholder('Features_{date}.xlsx')
         .setValue(reportsConfig?.feature.filename || this.plugin.settings.reports.features.filenameFormat)
@@ -385,7 +385,7 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Blocker Report Filename')
-      .setDesc('Filename format for blocker reports. Use {date} placeholder.')
+      .setDesc('Filename format. Placeholders: {project}, {year}, {date}')
       .addText(text => text
         .setPlaceholder('Blockers_{date}.xlsx')
         .setValue(reportsConfig?.blocker.filename || this.plugin.settings.reports.blockers.filenameFormat)
