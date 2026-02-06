@@ -8,19 +8,24 @@ This Obsidian plugin automatically converts your markdown task management files 
 
 > [한국어 문서 (Korean Documentation)](README_KO.md)
 
-**Version**: 3.0.0
+**Version**: 3.1.0
 **Author**: Jamin Park
 **License**: MIT
 **Platform**: Desktop only (ExcelJS requires Node.js APIs)
 
 ## Features
 
-- **4 Report Types**: Weekly, Quarterly, Feature Progress, Blocker Tracking
+- **4 Report Types**: Weekly (9 sheets), Quarterly (6 sheets), Feature Progress (3 sheets), Blocker Tracking (2 sheets)
 - **Multi-language Support**: English, Korean, Japanese, and custom presets
 - **One-Click Generation**: Generate reports via command palette or ribbon icon
 - **Auto-Detection**: Automatically detects current week/quarter
+- **Task Master Integration**: Q1-Q4 quarterly task data aggregation
+- **Customer Request Tracking**: Dedicated sheets for customer request status
+- **Executive Summary**: KPI dashboard with completion rates and trend analysis
+- **Dataview Field Support**: Parse `field:: value` inline fields
 - **Customizable**: Configure parsing rules, styling, and report structure
-- **Professional Formatting**: Colors, charts, conditional formatting
+- **Output Routing**: Automatic subfolder routing per report type
+- **Professional Formatting**: Colors, conditional formatting, auto column widths
 - **100% Data Accuracy**: Direct parsing from Obsidian markdown files
 
 ---
@@ -52,7 +57,7 @@ This Obsidian plugin automatically converts your markdown task management files 
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-repo/obsidian-excel-automation.git
+   git clone https://github.com/jaminpark/obsidian-excel-automation.git
    cd obsidian-excel-automation
    ```
 
@@ -85,8 +90,10 @@ Open Obsidian Settings > **Excel Automation** and set up your source files:
 |---------|-------------|---------|
 | Base Path | Root folder for all source files | `02. Area/Work/PROJECT` |
 | Output Directory | Where Excel files will be saved | `Reports/Excel` |
-| Dashboard File | PM Dashboard markdown file | `00_Dashboard/_PM Dashboard.md` |
+| Dashboard File | PM Dashboard markdown file | `00_Dashboard/SA_Dashboard.md` |
 | Blockers File | Blockers tracker markdown file | `03_Issues/Blockers.md` |
+| Task Master Files | Q1-Q4 task master files | `JIRA/Q1_TaskMaster.md` |
+| Customer Requests | Customer request tracking file | `JIRA/CustomerRequests.md` |
 
 ### 2. Generate Your First Report
 
@@ -115,8 +122,8 @@ Access these via Command Palette (`Cmd/Ctrl + P`):
 
 | Command | Description |
 |---------|-------------|
-| **Generate Weekly Report** | Creates 7-sheet report with weekly summary, roadmap, tasks, blockers, coordination, milestones, playbook |
-| **Generate Quarterly Report** | Creates 4-sheet report with quarterly overview, P0 tasks, P1 tasks, progress analytics |
+| **Generate Weekly Report** | Creates 9-sheet report with executive summary, weekly summary, roadmap, tasks, blockers, coordination, milestones, playbook, customer requests |
+| **Generate Quarterly Report** | Creates 6-sheet report with quarterly overview, P0 tasks, P1 tasks, progress analytics, weekly progress, customer request tracking |
 | **Generate Feature Progress Report** | Creates 3-sheet report with all features, by priority, by cycle |
 | **Generate Blocker Tracking Report** | Creates 2-sheet report with active blockers and history |
 | **Generate All Enabled Reports** | Generates all report types that are enabled in settings |
@@ -125,19 +132,21 @@ Access these via Command Palette (`Cmd/Ctrl + P`):
 
 ## Report Types
 
-### 1. Weekly Report (7 Sheets)
+### 1. Weekly Report (9 Sheets)
 
 | Sheet | Content |
 |-------|---------|
-| Weekly Summary | KPI dashboard with total tasks, completion rates, blockers |
+| Executive Summary | KPI dashboard with completion rates, trend analysis, active blockers |
+| Weekly Summary | Detailed weekly status with task breakdown |
 | Roadmap Progress | Progress tracking for roadmap items |
-| Task Details | All Q1 tasks with status, owner, deadline |
+| Task Details | All quarterly tasks with status, owner, deadline |
 | Blocker Tracking | Current blockers affecting progress |
 | Coordination | Cross-team coordination items |
 | Milestones | Key milestones and target dates |
 | Playbook Progress | Playbook execution tracking |
+| Customer Requests | Customer request status and tracking |
 
-### 2. Quarterly Report (4 Sheets)
+### 2. Quarterly Report (6 Sheets)
 
 | Sheet | Content |
 |-------|---------|
@@ -145,6 +154,8 @@ Access these via Command Palette (`Cmd/Ctrl + P`):
 | P0 Critical Tasks | High-priority critical tasks |
 | P1 High Priority | Important high-priority items |
 | Progress Analytics | Charts and trend analysis |
+| Weekly Progress | Week-by-week progress tracking |
+| Customer Request Tracking | Customer requests across the quarter |
 
 ### 3. Feature Progress Report (3 Sheets)
 
@@ -192,9 +203,13 @@ Settings > Excel Automation > Paths
 | **Base Path** | Root folder containing all source markdown files |
 | **Output Directory** | Folder where generated Excel files are saved |
 | **Dashboard File** | Path to PM Dashboard file (relative to Base Path) |
-| **Q1 Status File** | Path to Q1 status markdown file |
+| **Q1-Q4 Status Files** | Path to quarterly status markdown files |
 | **Blockers File** | Path to blockers tracker file |
 | **Roadmap File** | Path to roadmap markdown file |
+| **Task Master Q1-Q4** | Path to Task Master files per quarter |
+| **Task Master Index** | Path to annual Task Master index file |
+| **Customer Requests** | Path to customer request tracking file |
+| **Output Subfolders** | Subfolder routing: Weekly, Quarterly, Features, Blockers |
 
 ### Report Settings
 
@@ -206,9 +221,9 @@ Settings > Excel Automation > Reports
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Enable Weekly Report | ON | Generate weekly 7-sheet report |
+| Enable Weekly Report | ON | Generate weekly 9-sheet report |
 | Weekly Filename | `Weekly_W{week}_{date}.xlsx` | Filename format |
-| Enable Quarterly Report | ON | Generate quarterly 4-sheet report |
+| Enable Quarterly Report | ON | Generate quarterly 6-sheet report |
 | Enable Feature Report | ON | Generate feature progress report |
 | Enable Blocker Report | ON | Generate blocker tracking report |
 
@@ -310,6 +325,55 @@ The plugin can parse markdown tables:
 | Frontend | Dashboard update | @jane | 2026-02-20 |
 ```
 
+### JIRA IDs
+
+Link tasks to JIRA tickets:
+
+```markdown
+- [ ] 🔗 SA-051 Implement login flow
+- [ ] 🔗 SA-102 Fix dashboard bug
+```
+
+### Dataview Inline Fields
+
+Use Dataview-style fields for structured metadata:
+
+```markdown
+- [ ] API integration [owner:: @john] [due:: 2026-03-01]
+- [ ] DB migration [owner:: @jane] [due:: 2026-02-15] [status:: In Progress]
+```
+
+### Quarter/Area Tags
+
+Tag tasks with quarter and priority or area:
+
+```markdown
+- [ ] #q1/p0 Critical Q1 task
+- [ ] #C2/Snapshot Feature area tag
+```
+
+### Completion Dates
+
+Mark completed tasks with date:
+
+```markdown
+- [x] ✅ 2026-02-05 Finished the API refactoring
+```
+
+### Mermaid Gantt Charts
+
+The plugin can parse Mermaid Gantt blocks from Task Master files:
+
+````markdown
+```mermaid
+gantt
+    title Q1 Roadmap
+    section Backend
+    API Development :a1, 2026-01-06, 30d
+    DB Migration    :a2, after a1, 14d
+```
+````
+
 ---
 
 ## Import/Export Configuration
@@ -410,6 +474,15 @@ await plugin.generateBlockerReport();
 
 ## Changelog
 
+### v3.1.0 (2026-02-06)
+- **Task Master Integration**: Q1-Q4 Task Master file parsing with Mermaid Gantt support
+- **Customer Request Tracking**: New sheets in Weekly (고객요청현황) and Quarterly (고객요청 추적) reports
+- **Weekly Progress Sheet**: Week-by-week progress tracking in Quarterly reports
+- **Output Subfolder Routing**: Automatic subfolder routing per report type (Weekly/, Quarterly/, etc.)
+- **TypeScript Strict Compliance**: 0 errors with `tsc --noEmit`, full type safety
+- **Bug Fixes**: Quarterly key mapping, priority color casing, ConfigManager return types
+- **257 tests** across 9 suites passing
+
 ### v3.0.0 (2026-02-06)
 - Added Executive Summary dashboard sheet
 - Enhanced task detection with Dataview inline fields
@@ -437,8 +510,8 @@ await plugin.generateBlockerReport();
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/your-repo/obsidian-excel-automation/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/obsidian-excel-automation/discussions)
+- **Issues**: [GitHub Issues](https://github.com/jaminpark/obsidian-excel-automation/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/jaminpark/obsidian-excel-automation/discussions)
 
 ---
 

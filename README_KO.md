@@ -2,18 +2,23 @@
 
 > Obsidian 마크다운 파일에서 전문적인 Excel 보고서를 자동 생성합니다
 
-**버전**: 3.0.0
+**버전**: 3.1.0
 **작성자**: Jamin Park
 **라이선스**: MIT
 **데스크탑 전용**: ExcelJS 라이브러리가 Node.js API를 필요로 하여 데스크탑에서만 동작합니다
 
 ## 주요 기능
 
-- **4가지 보고서 유형**: 주간, 분기, 기능진척, 블로커추적
+- **4가지 보고서 유형**: 주간(9시트), 분기(6시트), 기능진척(3시트), 블로커추적(2시트)
 - **다국어 지원**: 한국어, English, 日本語, Minimal 프리셋
 - **원클릭 생성**: 커맨드 팔레트 또는 리본 아이콘으로 즉시 생성
 - **자동 감지**: 현재 주차/분기 자동 계산
+- **Task Master 통합**: Q1-Q4 분기별 작업 데이터 집계
+- **고객요청 추적**: 고객요청현황 전용 시트 제공
+- **Executive Summary**: KPI 대시보드, 완료율, 트렌드 분석
+- **Dataview 필드 지원**: `field:: value` 인라인 필드 파싱
 - **커스터마이징**: 파싱 규칙, 스타일, 보고서 구조 설정 가능
+- **출력 라우팅**: 보고서 유형별 자동 하위폴더 라우팅
 - **전문적 포맷**: 색상, 조건부 서식, 자동 열 너비 조정
 - **100% 데이터 정확도**: Obsidian 마크다운에서 직접 파싱
 
@@ -45,7 +50,7 @@
 
 ```bash
 # 저장소 클론
-git clone https://github.com/yourusername/obsidian-excel-automation.git
+git clone https://github.com/jaminpark/obsidian-excel-automation.git
 cd obsidian-excel-automation
 
 # 의존성 설치
@@ -97,29 +102,31 @@ your-vault/.obsidian/plugins/obsidian-excel-automation/
 
 | 명령어 | 설명 |
 |--------|------|
-| Generate Weekly Report | 7시트 주간보고서 생성 |
-| Generate Quarterly Report | 4시트 분기보고서 생성 |
+| Generate Weekly Report | 9시트 주간보고서 생성 |
+| Generate Quarterly Report | 6시트 분기보고서 생성 |
 | Generate Feature Progress Report | 3시트 기능진척보고서 생성 |
 | Generate Blocker Tracking Report | 2시트 블로커추적보고서 생성 |
 | Generate All Enabled Reports | 활성화된 모든 보고서 일괄 생성 |
 
 ## 보고서 유형
 
-### 1. 주간 보고서 (7 시트)
+### 1. 주간 보고서 (9 시트)
 
 | 시트명 | 내용 |
 |--------|------|
-| 주간현황 | KPI 대시보드: 총 작업수, 완료율, 블로커 현황 |
+| Executive Summary | KPI 대시보드: 완료율, 트렌드 분석, 활성 블로커 |
+| 주간현황 | 상세 주간 현황 및 작업 분류 |
 | 로드맵진척 | 로드맵 항목별 진척 현황 |
-| Q1작업상세 | Q1 전체 작업: 상태, 담당자, 마감일 |
+| Q작업상세 | 분기별 전체 작업: 상태, 담당자, 마감일 |
 | 블로커추적 | 현재 블로커 현황 및 영향도 |
 | Lawson협의 | 교차 팀 협의 사항 |
 | 마일스톤 | 주요 마일스톤 및 목표일 |
 | 플레이북진척 | 플레이북 실행 추적 |
+| 고객요청현황 | 고객 요청 상태 및 추적 |
 
 **용도**: 주간 팀 미팅, 진척 보고, 경영진 보고
 
-### 2. 분기 보고서 (4 시트)
+### 2. 분기 보고서 (6 시트)
 
 | 시트명 | 내용 |
 |--------|------|
@@ -127,6 +134,8 @@ your-vault/.obsidian/plugins/obsidian-excel-automation/
 | P0_Tasks | 최우선순위 작업 목록 |
 | P1_Tasks | 높은 우선순위 작업 목록 |
 | Progress_Charts | 진척률 차트 및 시각화 |
+| 주차별 진척 | 주차별 진행 현황 추적 |
+| 고객요청 추적 | 분기 전체 고객 요청 현황 |
 
 **용도**: 분기별 리뷰, 우선순위 관리, 전략 회의
 
@@ -173,6 +182,12 @@ your-vault/.obsidian/plugins/obsidian-excel-automation/
 - **Blockers File**: 블로커 추적 데이터
 - **Roadmap File**: 로드맵 데이터
 - **Lawson Discussions File**: 협의 사항 데이터
+- **Task Master Q1-Q4**: 분기별 Task Master 파일
+- **Task Master Index**: 연간 Task Master 인덱스
+- **Customer Requests**: 고객요청 추적 파일
+
+#### 출력 설정
+- **출력 하위폴더**: 보고서 유형별 자동 라우팅 (Weekly/, Quarterly/, Features/, Blockers/)
 
 ### 보고서 설정
 
@@ -302,6 +317,46 @@ Blocker Report: Blockers_{date}
 | UI 디자인 | 진행중 | 김철수 | 2026-02-15 |
 ```
 
+### JIRA ID 연동
+
+JIRA 티켓과 작업 연결:
+
+```markdown
+- [ ] 🔗 SA-051 로그인 플로우 구현
+- [ ] 🔗 SA-102 대시보드 버그 수정
+```
+
+### 분기/영역 태그
+
+분기와 우선순위 또는 영역 태그:
+
+```markdown
+- [ ] #q1/p0 Q1 긴급 작업
+- [ ] #C2/스냅샷 기능 영역 태그
+```
+
+### 완료일 표시
+
+완료된 작업에 날짜 표시:
+
+```markdown
+- [x] ✅ 2026-02-05 API 리팩토링 완료
+```
+
+### Mermaid Gantt 차트
+
+Task Master 파일의 Mermaid Gantt 블록 파싱:
+
+````markdown
+```mermaid
+gantt
+    title Q1 로드맵
+    section 백엔드
+    API 개발    :a1, 2026-01-06, 30d
+    DB 마이그레이션 :a2, after a1, 14d
+```
+````
+
 ## 설정 가져오기/내보내기
 
 ### 설정 내보내기
@@ -396,6 +451,23 @@ Blocker Report: Blockers_{date}
 
 ## 변경 이력
 
+### v3.1.0 (2026-02-06)
+
+**새로운 기능**:
+- Task Master Q1-Q4 통합: Mermaid Gantt 파싱 지원
+- 고객요청 추적: 주간(고객요청현황) 및 분기(고객요청 추적) 시트 추가
+- 주차별 진척 시트: 분기 보고서에 주차별 진행현황 추가
+- 출력 하위폴더 라우팅: 보고서 유형별 자동 폴더 분류
+
+**개선 사항**:
+- TypeScript Strict 완전 준수: `tsc --noEmit` 오류 0건
+- 257개 테스트, 9개 테스트 스위트 통과
+
+**버그 수정**:
+- 분기 키 매핑 오류 수정 (DataAggregator)
+- 우선순위 색상 키 대소문자 수정 (ExcelGenerator)
+- ConfigManager 반환 타입 개선
+
 ### v3.0.0 (2026-02-06)
 
 **새로운 기능**:
@@ -469,7 +541,7 @@ A: 현재 버전은 테이블 기반 보고서만 지원합니다. 차트 기능
 
 ```bash
 # 저장소 포크 및 클론
-git clone https://github.com/yourusername/obsidian-excel-automation.git
+git clone https://github.com/jaminpark/obsidian-excel-automation.git
 cd obsidian-excel-automation
 
 # 의존성 설치
@@ -519,4 +591,5 @@ SOFTWARE.
 
 **제작**: Jamin Park
 **최종 업데이트**: 2026-02-06
-**버전**: 3.0.0
+**GitHub**: https://github.com/jaminpark/obsidian-excel-automation
+**버전**: 3.1.0
