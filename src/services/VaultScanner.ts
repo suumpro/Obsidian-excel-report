@@ -5,7 +5,7 @@
 
 import { App, TFile } from 'obsidian';
 import { VaultService } from './VaultService';
-import { MarkdownParser } from './MarkdownParser';
+import { MarkdownParser } from './parsers';
 import { CacheManager, createCacheKey } from './CacheManager';
 import { logger } from '../utils/logger';
 import type { Task, Feature, Blocker } from '../types/models';

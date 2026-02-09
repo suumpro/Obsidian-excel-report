@@ -2,7 +2,7 @@
  * Unit tests for MarkdownParser
  */
 
-import { MarkdownParser } from '../src/services/MarkdownParser';
+import { MarkdownParser } from '../src/services/parsers';
 
 describe('MarkdownParser', () => {
   let parser: MarkdownParser;

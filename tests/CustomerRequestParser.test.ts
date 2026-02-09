@@ -3,7 +3,7 @@
  * Tests parseCustomerRequests method
  */
 
-import { MarkdownParser } from '../src/services/MarkdownParser';
+import { MarkdownParser } from '../src/services/parsers';
 
 describe('MarkdownParser - Customer Request Parsing', () => {
   let parser: MarkdownParser;

@@ -3,7 +3,7 @@
  * Tests parseWeeklyBreakdowns and extractTaskExtensions
  */
 
-import { MarkdownParser } from '../src/services/MarkdownParser';
+import { MarkdownParser } from '../src/services/parsers';
 
 describe('MarkdownParser - Task Master Extensions', () => {
   let parser: MarkdownParser;

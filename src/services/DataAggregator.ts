@@ -7,7 +7,7 @@
 
 import { App } from 'obsidian';
 import { VaultService } from './VaultService';
-import { MarkdownParser } from './MarkdownParser';
+import { MarkdownParser } from './parsers';
 import { CacheManager, createCacheKey } from './CacheManager';
 import { ConfigManager } from './ConfigManager';
 import { VaultScanner } from './VaultScanner';
