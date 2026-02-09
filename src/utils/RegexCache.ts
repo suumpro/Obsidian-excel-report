@@ -47,9 +47,12 @@ export class RegexCache {
     // Check if already cached
     if (this.cache.has(key)) {
       this.hits++;
-      // Return a new RegExp with same pattern to reset lastIndex
       const cached = this.cache.get(key)!;
-      return new RegExp(cached.source, cached.flags);
+      // Only clone for stateful flags (g/y) that track lastIndex
+      if (cached.global || cached.sticky) {
+        return new RegExp(cached.source, cached.flags);
+      }
+      return cached;
     }
 
     // Check if previously failed
@@ -62,7 +65,11 @@ export class RegexCache {
     try {
       const regex = new RegExp(pattern, flags);
       this.cache.set(key, regex);
-      return new RegExp(regex.source, regex.flags);
+      // Return clone for stateful flags, original otherwise
+      if (regex.global || regex.sticky) {
+        return new RegExp(regex.source, regex.flags);
+      }
+      return regex;
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : String(e);
       this.errors.set(key, errorMessage);

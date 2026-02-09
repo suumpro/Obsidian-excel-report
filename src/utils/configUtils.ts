@@ -202,8 +202,7 @@ export function hexToARGB(hex: string): string {
 export function createSafeRegex(pattern: string, flags?: string): RegExp | null {
   try {
     return new RegExp(pattern, flags);
-  } catch (e) {
-    console.error(`Invalid regex pattern: ${pattern}`, e);
+  } catch {
     return null;
   }
 }

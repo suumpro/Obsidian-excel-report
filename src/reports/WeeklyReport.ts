@@ -48,11 +48,11 @@ export class WeeklyReportGenerator extends ExcelGenerator {
     // Load all data in parallel for better performance
     logger.debug('Loading data from Obsidian files (parallel)...');
     const currentQuarter = Math.floor(new Date().getMonth() / 3) + 1;
-    const [dashboard, roadmap, blockers, q1Data, taskMaster, customerRequests] = await Promise.all([
+    const [dashboard, roadmap, blockers, quarterData, taskMaster, customerRequests] = await Promise.all([
       this.aggregator.loadDashboardData(),
       this.aggregator.loadRoadmapData(),
       this.aggregator.loadBlockerData(),
-      this.aggregator.loadQuarterlyData(1),
+      this.aggregator.loadQuarterlyData(currentQuarter),
       this.aggregator.loadTaskMasterData(currentQuarter),
       this.aggregator.loadCustomerRequestData(),
     ]);
@@ -62,7 +62,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
       dashboard,
       roadmap,
       blockers,
-      q1Data
+      quarterData
     );
 
     // Build executive summary data
@@ -91,7 +91,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
     this.createSheet2RoadmapProgress(roadmap);
 
     logger.debug(`Creating Sheet 4: ${sheets.taskDetails}`);
-    this.createSheet3Q1Tasks(q1Data, taskMaster);
+    this.createSheet3Q1Tasks(quarterData, taskMaster);
 
     logger.debug(`Creating Sheet 5: ${sheets.blockerTracking}`);
     this.createSheet4Blockers(blockers);
@@ -536,7 +536,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
    * Sheet 3: Task Details (Q1 Tasks)
    * Uses localized strings for sheet name and headers
    */
-  private createSheet3Q1Tasks(q1Data: QuarterlyData, taskMaster?: TaskMasterData): void {
+  private createSheet3Q1Tasks(quarterData: QuarterlyData, taskMaster?: TaskMasterData): void {
     const sheets = this.localeStrings.sheets;
     const cols = this.localeStrings.columns;
     const status = this.localeStrings.status;
@@ -548,7 +548,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
     // Combine P0 and P1 tasks, prefer Task Master data if available
     const sourceTasks = taskMaster && taskMaster.allTasks.length > 0
       ? taskMaster.allTasks
-      : [...q1Data.p0Tasks, ...q1Data.p1Tasks];
+      : [...quarterData.p0Tasks, ...quarterData.p1Tasks];
 
     const data = sourceTasks.map(task => [
       task.category || task.areaTag || '-',

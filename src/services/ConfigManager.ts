@@ -440,7 +440,12 @@ export class ConfigManager {
    * Import configuration from JSON string
    */
   async importConfig(jsonString: string): Promise<void> {
-    const imported = JSON.parse(jsonString);
+    let imported: unknown;
+    try {
+      imported = JSON.parse(jsonString);
+    } catch {
+      throw new Error('Invalid JSON format. Please check the configuration file.');
+    }
     const validation = validateConfig(imported);
 
     if (!validation.valid) {
@@ -448,9 +453,10 @@ export class ConfigManager {
     }
 
     // Preserve version
-    imported.version = CONFIG_VERSION;
+    const config = imported as PluginConfig;
+    config.version = CONFIG_VERSION;
 
-    this.config = imported;
+    this.config = config;
     await this.save();
   }
 

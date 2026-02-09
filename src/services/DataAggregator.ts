@@ -233,15 +233,15 @@ export class DataAggregator {
         completionRate,
         p0Total: p0Tasks.length,
         p0Completed,
-        p0InProgress: p0Tasks.length - p0Completed,
+        p0InProgress: 0,
         p0Pending: p0Tasks.length - p0Completed,
         p1Total: p1Tasks.length,
         p1Completed,
-        p1InProgress: p1Tasks.length - p1Completed,
+        p1InProgress: 0,
         p1Pending: p1Tasks.length - p1Completed,
         p2Total: p2Tasks.length,
         p2Completed,
-        p2InProgress: p2Tasks.length - p2Completed,
+        p2InProgress: 0,
         p2Pending: p2Tasks.length - p2Completed,
       };
 

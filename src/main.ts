@@ -34,6 +34,7 @@ export default class ExcelAutomationPlugin extends Plugin {
   settings: ExcelAutomationSettings;
   private vaultService: VaultService;
   configManager: ConfigManager;
+  private pathValidator: PathValidator | null = null;
 
   async onload() {
     logger.info('Loading Excel Automation Plugin v4.0');
@@ -113,7 +114,7 @@ export default class ExcelAutomationPlugin extends Plugin {
       id: 'validate-paths',
       name: 'Validate Source File Paths',
       callback: () => {
-        const validator = new PathValidator(this.app, this.settings, this.configManager);
+        const validator = this.getPathValidator();
         const results = validator.validateAll();
         const messages: string[] = [];
         for (const [type, result] of Object.entries(results)) {
@@ -146,6 +147,13 @@ export default class ExcelAutomationPlugin extends Plugin {
         new SetupWizardModal(this.app, this.configManager).open();
       }, 1000);
     }
+  }
+
+  private getPathValidator(): PathValidator {
+    if (!this.pathValidator) {
+      this.pathValidator = this.getPathValidator();
+    }
+    return this.pathValidator;
   }
 
   onunload() {
@@ -237,7 +245,7 @@ export default class ExcelAutomationPlugin extends Plugin {
     }
 
     // Validate paths before generating
-    const validator = new PathValidator(this.app, this.settings, this.configManager);
+    const validator = this.getPathValidator();
     const validation = validator.validate('weekly');
     if (!validation.valid) {
       const msg = validator.formatResult(validation, 'Weekly Report');
@@ -270,7 +278,7 @@ export default class ExcelAutomationPlugin extends Plugin {
 
       // Save to vault
       const outputPath = this.getOutputPath('weekly', filename);
-      await this.vaultService.ensureFolderExists(outputPath);
+
       await this.vaultService.createBinaryFile(outputPath, buffer);
 
       const elapsed = progress.getElapsedTime();
@@ -305,7 +313,7 @@ export default class ExcelAutomationPlugin extends Plugin {
       const quarterInfo = getCurrentQuarterInfo();
 
       // Validate paths before generating
-      const validator = new PathValidator(this.app, this.settings, this.configManager);
+      const validator = this.getPathValidator();
       const validation = validator.validate('quarterly', quarterInfo.quarter);
       if (!validation.valid) {
         const msg = validator.formatResult(validation, 'Quarterly Report');
@@ -327,7 +335,7 @@ export default class ExcelAutomationPlugin extends Plugin {
 
       // Save to vault
       const outputPath = this.getOutputPath('quarterly', filename);
-      await this.vaultService.ensureFolderExists(outputPath);
+
       await this.vaultService.createBinaryFile(outputPath, buffer);
 
       const elapsed = progress.getElapsedTime();
@@ -353,7 +361,7 @@ export default class ExcelAutomationPlugin extends Plugin {
     }
 
     // Validate paths before generating
-    const validator = new PathValidator(this.app, this.settings, this.configManager);
+    const validator = this.getPathValidator();
     const validation = validator.validate('feature');
     if (!validation.valid) {
       const msg = validator.formatResult(validation, 'Feature Report');
@@ -385,7 +393,7 @@ export default class ExcelAutomationPlugin extends Plugin {
 
       // Save to vault
       const outputPath = this.getOutputPath('feature', filename);
-      await this.vaultService.ensureFolderExists(outputPath);
+
       await this.vaultService.createBinaryFile(outputPath, buffer);
 
       const elapsed = progress.getElapsedTime();
@@ -411,7 +419,7 @@ export default class ExcelAutomationPlugin extends Plugin {
     }
 
     // Validate paths before generating
-    const validator = new PathValidator(this.app, this.settings, this.configManager);
+    const validator = this.getPathValidator();
     const validation = validator.validate('blocker');
     if (!validation.valid) {
       const msg = validator.formatResult(validation, 'Blocker Report');
@@ -443,7 +451,7 @@ export default class ExcelAutomationPlugin extends Plugin {
 
       // Save to vault
       const outputPath = this.getOutputPath('blocker', filename);
-      await this.vaultService.ensureFolderExists(outputPath);
+
       await this.vaultService.createBinaryFile(outputPath, buffer);
 
       const elapsed = progress.getElapsedTime();
