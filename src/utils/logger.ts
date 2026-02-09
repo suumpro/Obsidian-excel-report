@@ -76,13 +76,6 @@ export function showError(message: string): void {
 }
 
 /**
- * Show warning notice to user
- */
-export function showWarning(message: string): void {
-  new Notice(`${message}`, 3000);
-}
-
-/**
  * Show progress notice (returns Notice for manual hiding)
  */
 export function showProgress(message: string): Notice {

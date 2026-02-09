@@ -96,7 +96,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(sourcesConfig?.basePath || this.plugin.settings.basePath)
         .onChange(async (value) => {
           this.plugin.settings.basePath = value;
-          await this.plugin.saveSettings();
           await configManager?.updateSources({ basePath: value });
         }));
 
@@ -108,7 +107,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(sourcesConfig?.outputDir || this.plugin.settings.outputDir)
         .onChange(async (value) => {
           this.plugin.settings.outputDir = value;
-          await this.plugin.saveSettings();
           await configManager?.updateSources({ outputDir: value });
         }));
 
@@ -127,7 +125,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(sourcesConfig?.dashboard || this.plugin.settings.sources.dashboard)
         .onChange(async (value) => {
           this.plugin.settings.sources.dashboard = value;
-          await this.plugin.saveSettings();
           await configManager?.updateSources({ dashboard: value });
         }));
 
@@ -138,7 +135,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(sourcesConfig?.quarterly?.q1 || this.plugin.settings.sources.q1Status)
         .onChange(async (value) => {
           this.plugin.settings.sources.q1Status = value;
-          await this.plugin.saveSettings();
           await configManager?.updateSources({ quarterly: { ...sourcesConfig?.quarterly, q1: value } });
         }));
 
@@ -149,7 +145,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(sourcesConfig?.blockers || this.plugin.settings.sources.blockers)
         .onChange(async (value) => {
           this.plugin.settings.sources.blockers = value;
-          await this.plugin.saveSettings();
           await configManager?.updateSources({ blockers: value });
         }));
 
@@ -160,7 +155,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(sourcesConfig?.roadmap || this.plugin.settings.sources.roadmap)
         .onChange(async (value) => {
           this.plugin.settings.sources.roadmap = value;
-          await this.plugin.saveSettings();
           await configManager?.updateSources({ roadmap: value });
         }));
 
@@ -252,7 +246,7 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
           const config = configManager?.get();
           if (config) {
             (config as any).output = { ...outputConfig, weeklySubdir: value };
-            await this.plugin.saveSettings();
+            await configManager?.updateAdvanced({});
           }
         }));
 
@@ -266,7 +260,7 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
           const config = configManager?.get();
           if (config) {
             (config as any).output = { ...outputConfig, quarterlySubdir: value };
-            await this.plugin.saveSettings();
+            await configManager?.updateAdvanced({});
           }
         }));
 
@@ -280,7 +274,7 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
           const config = configManager?.get();
           if (config) {
             (config as any).output = { ...outputConfig, featureSubdir: value };
-            await this.plugin.saveSettings();
+            await configManager?.updateAdvanced({});
           }
         }));
 
@@ -294,7 +288,7 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
           const config = configManager?.get();
           if (config) {
             (config as any).output = { ...outputConfig, blockerSubdir: value };
-            await this.plugin.saveSettings();
+            await configManager?.updateAdvanced({});
           }
         }));
 
@@ -310,7 +304,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(reportsConfig?.weekly.enabled ?? this.plugin.settings.reports.weekly.enabled)
         .onChange(async (value) => {
           this.plugin.settings.reports.weekly.enabled = value;
-          await this.plugin.saveSettings();
           await configManager?.updateReports({ weekly: { ...reportsConfig?.weekly, enabled: value } });
         }));
 
@@ -322,7 +315,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(reportsConfig?.weekly.filename || this.plugin.settings.reports.weekly.filenameFormat)
         .onChange(async (value) => {
           this.plugin.settings.reports.weekly.filenameFormat = value;
-          await this.plugin.saveSettings();
           await configManager?.updateReports({ weekly: { ...reportsConfig?.weekly, filename: value } });
         }));
 
@@ -333,7 +325,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(reportsConfig?.quarterly.enabled ?? this.plugin.settings.reports.quarterly.enabled)
         .onChange(async (value) => {
           this.plugin.settings.reports.quarterly.enabled = value;
-          await this.plugin.saveSettings();
           await configManager?.updateReports({ quarterly: { ...reportsConfig?.quarterly, enabled: value } });
         }));
 
@@ -345,7 +336,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(reportsConfig?.quarterly.filename || this.plugin.settings.reports.quarterly.filenameFormat)
         .onChange(async (value) => {
           this.plugin.settings.reports.quarterly.filenameFormat = value;
-          await this.plugin.saveSettings();
           await configManager?.updateReports({ quarterly: { ...reportsConfig?.quarterly, filename: value } });
         }));
 
@@ -356,7 +346,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(reportsConfig?.feature.enabled ?? this.plugin.settings.reports.features.enabled)
         .onChange(async (value) => {
           this.plugin.settings.reports.features.enabled = value;
-          await this.plugin.saveSettings();
           await configManager?.updateReports({ feature: { ...reportsConfig?.feature, enabled: value } });
         }));
 
@@ -368,7 +357,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(reportsConfig?.feature.filename || this.plugin.settings.reports.features.filenameFormat)
         .onChange(async (value) => {
           this.plugin.settings.reports.features.filenameFormat = value;
-          await this.plugin.saveSettings();
           await configManager?.updateReports({ feature: { ...reportsConfig?.feature, filename: value } });
         }));
 
@@ -379,7 +367,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(reportsConfig?.blocker.enabled ?? this.plugin.settings.reports.blockers.enabled)
         .onChange(async (value) => {
           this.plugin.settings.reports.blockers.enabled = value;
-          await this.plugin.saveSettings();
           await configManager?.updateReports({ blocker: { ...reportsConfig?.blocker, enabled: value } });
         }));
 
@@ -391,7 +378,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(reportsConfig?.blocker.filename || this.plugin.settings.reports.blockers.filenameFormat)
         .onChange(async (value) => {
           this.plugin.settings.reports.blockers.filenameFormat = value;
-          await this.plugin.saveSettings();
           await configManager?.updateReports({ blocker: { ...reportsConfig?.blocker, filename: value } });
         }));
 
@@ -412,7 +398,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(styleConfig?.colors.headerBackground || this.plugin.settings.styling.headerColor)
         .onChange(async (value) => {
           this.plugin.settings.styling.headerColor = value;
-          await this.plugin.saveSettings();
           await configManager?.updateStyle({ colors: { ...styleConfig?.colors, headerBackground: value } });
         }));
 
@@ -424,7 +409,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(styleConfig?.colors.priority.p0 || this.plugin.settings.styling.priorityColors.P0)
         .onChange(async (value) => {
           this.plugin.settings.styling.priorityColors.P0 = value;
-          await this.plugin.saveSettings();
           await configManager?.updateStyle({
             colors: { ...styleConfig?.colors, priority: { ...styleConfig?.colors.priority, p0: value } }
           });
@@ -438,7 +422,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(styleConfig?.colors.priority.p1 || this.plugin.settings.styling.priorityColors.P1)
         .onChange(async (value) => {
           this.plugin.settings.styling.priorityColors.P1 = value;
-          await this.plugin.saveSettings();
           await configManager?.updateStyle({
             colors: { ...styleConfig?.colors, priority: { ...styleConfig?.colors.priority, p1: value } }
           });
@@ -452,7 +435,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(styleConfig?.colors.priority.p2 || this.plugin.settings.styling.priorityColors.P2)
         .onChange(async (value) => {
           this.plugin.settings.styling.priorityColors.P2 = value;
-          await this.plugin.saveSettings();
           await configManager?.updateStyle({
             colors: { ...styleConfig?.colors, priority: { ...styleConfig?.colors.priority, p2: value } }
           });
@@ -470,7 +452,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(advancedConfig?.debugLogging ?? this.plugin.settings.advanced.debug)
         .onChange(async (value) => {
           this.plugin.settings.advanced.debug = value;
-          await this.plugin.saveSettings();
           await configManager?.updateAdvanced({ debugLogging: value });
         }));
 
@@ -483,7 +464,6 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .setValue(String(advancedConfig?.weekStartDay ?? this.plugin.settings.advanced.weekStartDay))
         .onChange(async (value) => {
           this.plugin.settings.advanced.weekStartDay = parseInt(value);
-          await this.plugin.saveSettings();
           await configManager?.updateAdvanced({ weekStartDay: parseInt(value) as 0 | 1 });
         }));
 

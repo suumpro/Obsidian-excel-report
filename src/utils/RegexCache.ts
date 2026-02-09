@@ -185,7 +185,7 @@ export class RegexCache {
  * Default patterns commonly used in Obsidian task parsing.
  * Pre-compile these on plugin initialization.
  */
-export const DEFAULT_PATTERNS = [
+const DEFAULT_PATTERNS = [
   // Checkbox patterns
   { pattern: '^\\s*-\\s*\\[([ xX])\\]\\s+(.+)$', flags: 'gm' },
 
@@ -244,9 +244,3 @@ export function getGlobalRegexCache(): RegexCache {
   return globalCache;
 }
 
-/**
- * Reset the global cache (useful for testing).
- */
-export function resetGlobalRegexCache(): void {
-  globalCache = null;
-}

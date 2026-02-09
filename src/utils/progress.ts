@@ -71,7 +71,7 @@ export class ProgressReporter {
   complete(message?: string): void {
     const elapsed = Date.now() - this.startTime;
     this.hideNotice();
-    new Notice(message || `완료! (${this.formatTime(elapsed)})`, 3000);
+    new Notice(message || `Done! (${this.formatTime(elapsed)})`, 3000);
   }
 
   /**
@@ -79,7 +79,7 @@ export class ProgressReporter {
    */
   error(message: string): void {
     this.hideNotice();
-    new Notice(`오류: ${message}`, 5000);
+    new Notice(message, 5000);
   }
 
   /**
@@ -140,43 +140,36 @@ export class ProgressReporter {
  */
 
 export const WEEKLY_REPORT_STEPS: ProgressStep[] = [
-  { label: '데이터 로딩 중...', weight: 2 },
-  { label: 'Sheet 1: 주간현황 생성 중...', weight: 1 },
-  { label: 'Sheet 2: 로드맵진척 생성 중...', weight: 1 },
-  { label: 'Sheet 3: Q1작업상세 생성 중...', weight: 1 },
-  { label: 'Sheet 4: 블로커추적 생성 중...', weight: 1 },
-  { label: 'Sheet 5-7: 추가 시트 생성 중...', weight: 1 },
-  { label: '파일 저장 중...', weight: 1 },
+  { label: 'Loading data...', weight: 2 },
+  { label: 'Sheet 1: Weekly Summary...', weight: 1 },
+  { label: 'Sheet 2: Roadmap Progress...', weight: 1 },
+  { label: 'Sheet 3: Task Details...', weight: 1 },
+  { label: 'Sheet 4: Blocker Tracking...', weight: 1 },
+  { label: 'Sheet 5-7: Additional sheets...', weight: 1 },
+  { label: 'Saving file...', weight: 1 },
 ];
 
 export const QUARTERLY_REPORT_STEPS: ProgressStep[] = [
-  { label: '데이터 로딩 중...', weight: 2 },
-  { label: 'Sheet 1: Overview 생성 중...', weight: 1 },
-  { label: 'Sheet 2: P0 Tasks 생성 중...', weight: 1 },
-  { label: 'Sheet 3: P1 Tasks 생성 중...', weight: 1 },
-  { label: 'Sheet 4: Analytics 생성 중...', weight: 1 },
-  { label: '파일 저장 중...', weight: 1 },
+  { label: 'Loading data...', weight: 2 },
+  { label: 'Sheet 1: Overview...', weight: 1 },
+  { label: 'Sheet 2: P0 Tasks...', weight: 1 },
+  { label: 'Sheet 3: P1 Tasks...', weight: 1 },
+  { label: 'Sheet 4: Analytics...', weight: 1 },
+  { label: 'Saving file...', weight: 1 },
 ];
 
 export const FEATURE_REPORT_STEPS: ProgressStep[] = [
-  { label: '데이터 로딩 중...', weight: 2 },
-  { label: 'Sheet 1: All Features 생성 중...', weight: 1 },
-  { label: 'Sheet 2: By Priority 생성 중...', weight: 1 },
-  { label: 'Sheet 3: By Cycle 생성 중...', weight: 1 },
-  { label: '파일 저장 중...', weight: 1 },
+  { label: 'Loading data...', weight: 2 },
+  { label: 'Sheet 1: All Features...', weight: 1 },
+  { label: 'Sheet 2: By Priority...', weight: 1 },
+  { label: 'Sheet 3: By Cycle...', weight: 1 },
+  { label: 'Saving file...', weight: 1 },
 ];
 
 export const BLOCKER_REPORT_STEPS: ProgressStep[] = [
-  { label: '데이터 로딩 중...', weight: 2 },
-  { label: 'Sheet 1: Active Blockers 생성 중...', weight: 1 },
-  { label: 'Sheet 2: Blocker History 생성 중...', weight: 1 },
-  { label: '파일 저장 중...', weight: 1 },
+  { label: 'Loading data...', weight: 2 },
+  { label: 'Sheet 1: Active Blockers...', weight: 1 },
+  { label: 'Sheet 2: Blocker History...', weight: 1 },
+  { label: 'Saving file...', weight: 1 },
 ];
 
-/**
- * Create a simple progress reporter for custom operations
- */
-export function createProgressReporter(stepLabels: string[]): ProgressReporter {
-  const steps = stepLabels.map(label => ({ label, weight: 1 }));
-  return new ProgressReporter(steps);
-}

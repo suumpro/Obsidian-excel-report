@@ -9,7 +9,6 @@ import {
   QUARTERLY_REPORT_STEPS,
   FEATURE_REPORT_STEPS,
   BLOCKER_REPORT_STEPS,
-  createProgressReporter,
 } from '../src/utils/progress';
 
 describe('ProgressReporter', () => {
@@ -148,21 +147,3 @@ describe('pre-defined step sets', () => {
   });
 });
 
-describe('createProgressReporter', () => {
-  it('should create reporter from simple labels', () => {
-    const labels = ['Loading', 'Processing', 'Saving'];
-    const reporter = createProgressReporter(labels);
-
-    reporter.start();
-    expect(reporter.getProgressPercentage()).toBe(0);
-
-    reporter.nextStep();
-    expect(reporter.getProgressPercentage()).toBe(33); // 1/3 rounded
-
-    reporter.nextStep();
-    expect(reporter.getProgressPercentage()).toBe(67); // 2/3 rounded
-
-    reporter.nextStep();
-    expect(reporter.getProgressPercentage()).toBe(100);
-  });
-});

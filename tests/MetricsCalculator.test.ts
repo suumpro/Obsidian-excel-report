@@ -307,61 +307,6 @@ describe('MetricsCalculator', () => {
     });
   });
 
-  describe('formatPercentage', () => {
-    it('should format with default 1 decimal place', () => {
-      expect(MetricsCalculator.formatPercentage(50)).toBe('50.0%');
-      expect(MetricsCalculator.formatPercentage(66.666)).toBe('66.7%');
-      expect(MetricsCalculator.formatPercentage(33.333)).toBe('33.3%');
-    });
-
-    it('should format with custom decimal places', () => {
-      expect(MetricsCalculator.formatPercentage(50, 0)).toBe('50%');
-      expect(MetricsCalculator.formatPercentage(66.666, 2)).toBe('66.67%');
-      expect(MetricsCalculator.formatPercentage(33.333, 3)).toBe('33.333%');
-    });
-
-    it('should handle edge values', () => {
-      expect(MetricsCalculator.formatPercentage(0)).toBe('0.0%');
-      expect(MetricsCalculator.formatPercentage(100)).toBe('100.0%');
-      expect(MetricsCalculator.formatPercentage(0.1)).toBe('0.1%');
-    });
-  });
-
-  describe('getProgressBar', () => {
-    it('should show 0% progress', () => {
-      const bar = MetricsCalculator.getProgressBar(0, 10);
-      expect(bar).toBe('░░░░░░░░░░');
-      expect(bar.length).toBe(10);
-    });
-
-    it('should show 50% progress', () => {
-      const bar = MetricsCalculator.getProgressBar(5, 10);
-      expect(bar).toBe('█████░░░░░');
-      expect(bar.length).toBe(10);
-    });
-
-    it('should show 100% progress', () => {
-      const bar = MetricsCalculator.getProgressBar(10, 10);
-      expect(bar).toBe('██████████');
-      expect(bar.length).toBe(10);
-    });
-
-    it('should handle total=0', () => {
-      const bar = MetricsCalculator.getProgressBar(0, 0);
-      expect(bar).toBe('░░░░░░░░░░');
-    });
-
-    it('should respect custom width', () => {
-      const bar = MetricsCalculator.getProgressBar(3, 6, 6);
-      expect(bar).toBe('███░░░');
-      expect(bar.length).toBe(6);
-    });
-
-    it('should handle partial progress', () => {
-      const bar = MetricsCalculator.getProgressBar(3, 10);
-      expect(bar).toBe('███░░░░░░░');
-    });
-  });
 });
 
 describe('Presets', () => {

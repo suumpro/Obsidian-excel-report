@@ -39,12 +39,3 @@ export function isBlocker(status: string): boolean {
   return matchesAny(status, BLOCKER_PATTERNS);
 }
 
-/**
- * Get a normalized status category
- */
-export function normalizeStatus(status: string): 'completed' | 'inProgress' | 'pending' | 'resolved' {
-  if (isCompleted(status)) return 'completed';
-  if (isResolved(status)) return 'resolved';
-  if (isInProgress(status)) return 'inProgress';
-  return 'pending';
-}

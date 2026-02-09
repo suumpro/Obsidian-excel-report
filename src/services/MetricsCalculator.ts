@@ -172,23 +172,4 @@ export class MetricsCalculator {
     return metrics;
   }
 
-  /**
-   * Format percentage with specified decimal places
-   */
-  static formatPercentage(value: number, decimals: number = 1): string {
-    return `${value.toFixed(decimals)}%`;
-  }
-
-  /**
-   * Get visual progress bar
-   */
-  static getProgressBar(current: number, total: number, width: number = 10): string {
-    if (total === 0) return '░'.repeat(width);
-
-    const percentage = current / total;
-    const filled = Math.round(percentage * width);
-    const empty = width - filled;
-
-    return '█'.repeat(filled) + '░'.repeat(empty);
-  }
 }
