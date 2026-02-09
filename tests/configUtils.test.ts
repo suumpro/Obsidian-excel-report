@@ -9,9 +9,6 @@ import {
   hexToARGB,
   createSafeRegex,
   matchesAny,
-  extractWithPatterns,
-  normalizeStatus,
-  normalizePriority,
   cloneConfig,
   getNestedValue,
   setNestedValue,
@@ -324,112 +321,6 @@ describe('configUtils', () => {
 
     it('should handle invalid regex gracefully', () => {
       expect(matchesAny('test', ['/[invalid/'])).toBe(false);
-    });
-  });
-
-  describe('extractWithPatterns', () => {
-    it('should extract capture group from matching pattern', () => {
-      const result = extractWithPatterns('📅 2024-06-15', ['📅 (\\d{4}-\\d{2}-\\d{2})']);
-      expect(result).toBe('2024-06-15');
-    });
-
-    it('should try multiple patterns and return first match', () => {
-      const patterns = [
-        '@due\\((.*?)\\)',
-        '📅 (\\d{4}-\\d{2}-\\d{2})',
-        'deadline[:\\s]*(\\d{4}-\\d{2}-\\d{2})',
-      ];
-      expect(extractWithPatterns('@due(2024-06-15)', patterns)).toBe('2024-06-15');
-      expect(extractWithPatterns('📅 2024-06-15', patterns)).toBe('2024-06-15');
-      expect(extractWithPatterns('deadline: 2024-06-15', patterns)).toBe('2024-06-15');
-    });
-
-    it('should return null for non-matching text', () => {
-      const result = extractWithPatterns('no date here', ['📅 (\\d{4}-\\d{2}-\\d{2})']);
-      expect(result).toBeNull();
-    });
-
-    it('should return null for patterns without capture groups', () => {
-      const result = extractWithPatterns('test', ['test']);
-      expect(result).toBeNull();
-    });
-
-    it('should handle case insensitivity', () => {
-      const result = extractWithPatterns('OWNER: John', ['owner[:\\s]*(\\w+)']);
-      expect(result).toBe('John');
-    });
-
-    it('should handle invalid regex gracefully', () => {
-      const result = extractWithPatterns('test', ['[invalid']);
-      expect(result).toBeNull();
-    });
-  });
-
-  describe('normalizeStatus', () => {
-    const mapping = {
-      completed: ['[x]', '✅', '완료', 'done'],
-      inProgress: ['[/]', '🔄', '진행중', 'wip'],
-      pending: ['[ ]', '⬜', '대기', 'todo'],
-    };
-
-    it('should normalize completed status', () => {
-      expect(normalizeStatus('[x]', mapping)).toBe('completed');
-      expect(normalizeStatus('✅', mapping)).toBe('completed');
-      expect(normalizeStatus('완료', mapping)).toBe('completed');
-      expect(normalizeStatus('DONE', mapping)).toBe('completed');
-    });
-
-    it('should normalize in-progress status', () => {
-      expect(normalizeStatus('[/]', mapping)).toBe('inProgress');
-      expect(normalizeStatus('🔄', mapping)).toBe('inProgress');
-      expect(normalizeStatus('진행중', mapping)).toBe('inProgress');
-      expect(normalizeStatus('WIP', mapping)).toBe('inProgress');
-    });
-
-    it('should default to pending for unknown status', () => {
-      expect(normalizeStatus('unknown', mapping)).toBe('pending');
-      expect(normalizeStatus('', mapping)).toBe('pending');
-    });
-
-    it('should explicitly normalize pending status', () => {
-      expect(normalizeStatus('[ ]', mapping)).toBe('pending');
-      expect(normalizeStatus('⬜', mapping)).toBe('pending');
-      expect(normalizeStatus('대기', mapping)).toBe('pending');
-      expect(normalizeStatus('TODO', mapping)).toBe('pending');
-    });
-  });
-
-  describe('normalizePriority', () => {
-    const indicators = {
-      p0: ['⏫', '#P0', '[P0]', '긴급'],
-      p1: ['🔼', '#P1', '[P1]', '높음'],
-      p2: ['🔽', '#P2', '[P2]', '낮음'],
-    };
-
-    it('should normalize P0 priority', () => {
-      expect(normalizePriority('⏫', indicators)).toBe('P0');
-      expect(normalizePriority('#P0', indicators)).toBe('P0');
-      expect(normalizePriority('[P0]', indicators)).toBe('P0');
-      expect(normalizePriority('긴급', indicators)).toBe('P0');
-    });
-
-    it('should normalize P1 priority', () => {
-      expect(normalizePriority('🔼', indicators)).toBe('P1');
-      expect(normalizePriority('#P1', indicators)).toBe('P1');
-      expect(normalizePriority('[P1]', indicators)).toBe('P1');
-      expect(normalizePriority('높음', indicators)).toBe('P1');
-    });
-
-    it('should default to P2 for unknown priority', () => {
-      expect(normalizePriority('unknown', indicators)).toBe('P2');
-      expect(normalizePriority('', indicators)).toBe('P2');
-    });
-
-    it('should explicitly normalize P2 priority', () => {
-      expect(normalizePriority('🔽', indicators)).toBe('P2');
-      expect(normalizePriority('#P2', indicators)).toBe('P2');
-      expect(normalizePriority('[P2]', indicators)).toBe('P2');
-      expect(normalizePriority('낮음', indicators)).toBe('P2');
     });
   });
 

@@ -6,6 +6,8 @@
  * during task parsing. Provides error tracking for invalid patterns.
  */
 
+import { logger } from './logger';
+
 export interface RegexCacheStats {
   /** Number of cached patterns */
   cached: number;
@@ -73,7 +75,7 @@ export class RegexCache {
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : String(e);
       this.errors.set(key, errorMessage);
-      console.warn(`[RegexCache] Invalid pattern: ${pattern} - ${errorMessage}`);
+      logger.warn(`[RegexCache] Invalid pattern: ${pattern} - ${errorMessage}`);
       return null;
     }
   }

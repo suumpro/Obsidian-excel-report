@@ -5,6 +5,7 @@
  */
 
 import { Plugin } from 'obsidian';
+import { logger } from '../utils/logger';
 import {
   PluginConfig,
   CONFIG_VERSION,
@@ -31,6 +32,7 @@ export class ConfigManager {
   private listeners: Set<ConfigListener> = new Set();
   private initialized: boolean = false;
   private _isFirstRun: boolean = false;
+  private rawData: Record<string, unknown> | null = null;
 
   constructor(plugin: Plugin) {
     this.plugin = plugin;
@@ -48,6 +50,7 @@ export class ConfigManager {
     if (this.initialized) return;
 
     const savedData = await this.plugin.loadData();
+    this.rawData = savedData;
 
     if (!savedData) {
       // First time user - use default preset
@@ -68,7 +71,7 @@ export class ConfigManager {
     // Validate and save
     const validation = validateConfig(this.config);
     if (!validation.valid) {
-      console.warn('Config validation warnings:', validation.errors);
+      logger.warn('Config validation warnings:', validation.errors);
       // Apply defaults for missing values
       this.config = this.applyDefaults(this.config);
     }
@@ -81,7 +84,7 @@ export class ConfigManager {
    * Migrate from v1 settings format
    */
   private async migrateFromV1(oldSettings: any): Promise<PluginConfig> {
-    console.log('Migrating from v1 settings...');
+    logger.info('Migrating from v1 settings...');
 
     // Start with korean-default preset (matches v1 behavior)
     const baseConfig = getPreset('korean-default');
@@ -166,7 +169,7 @@ export class ConfigManager {
    * Upgrade config from older v2.x versions
    */
   private async upgradeConfig(oldConfig: PluginConfig): Promise<PluginConfig> {
-    console.log(`Upgrading config from ${oldConfig.version} to ${CONFIG_VERSION}...`);
+    logger.info(`Upgrading config from ${oldConfig.version} to ${CONFIG_VERSION}...`);
 
     // Get the appropriate preset based on current locale
     const currentPreset = getPreset(oldConfig.locale || 'korean-default');
@@ -176,7 +179,7 @@ export class ConfigManager {
 
     // v2.0 → v2.1 migration
     if (oldConfig.version === '2.0' || oldConfig.version === '2.1') {
-      console.log(`Applying ${oldConfig.version} → v3.0 migration...`);
+      logger.info(`Applying ${oldConfig.version} → v3.0 migration...`);
 
       // Add Task Master paths if not present
       if (!upgraded.sources.taskMasters) {
@@ -229,6 +232,13 @@ export class ConfigManager {
    */
   get isFirstRun(): boolean {
     return this._isFirstRun;
+  }
+
+  /**
+   * Get the raw data loaded during initialization (avoids double loadData)
+   */
+  getRawData(): Record<string, unknown> | null {
+    return this.rawData;
   }
 
   /**
@@ -422,7 +432,7 @@ export class ConfigManager {
       try {
         listener(configCopy);
       } catch (e) {
-        console.error('Error in config listener:', e);
+        logger.error('Error in config listener:', e);
       }
     });
   }

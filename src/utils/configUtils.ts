@@ -225,48 +225,6 @@ export function matchesAny(text: string, patterns: string[]): boolean {
   });
 }
 
-/**
- * Find first matching pattern and return capture group
- */
-export function extractWithPatterns(
-  text: string,
-  patterns: string[]
-): string | null {
-  for (const pattern of patterns) {
-    const regex = createSafeRegex(pattern, 'i');
-    if (regex) {
-      const match = regex.exec(text);
-      if (match && match[1]) {
-        return match[1];
-      }
-    }
-  }
-  return null;
-}
-
-/**
- * Normalize a status value to a standard key
- */
-export function normalizeStatus(
-  value: string,
-  mapping: { completed: string[]; inProgress: string[]; pending: string[] }
-): 'completed' | 'inProgress' | 'pending' {
-  if (matchesAny(value, mapping.completed)) return 'completed';
-  if (matchesAny(value, mapping.inProgress)) return 'inProgress';
-  return 'pending';
-}
-
-/**
- * Normalize a priority value to a standard key
- */
-export function normalizePriority(
-  value: string,
-  indicators: { p0: string[]; p1: string[]; p2: string[] }
-): 'P0' | 'P1' | 'P2' {
-  if (matchesAny(value, indicators.p0)) return 'P0';
-  if (matchesAny(value, indicators.p1)) return 'P1';
-  return 'P2';
-}
 
 /**
  * Clone a configuration object (deep copy)

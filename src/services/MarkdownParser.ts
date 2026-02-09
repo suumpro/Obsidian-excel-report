@@ -16,15 +16,8 @@ import { ParsingConfig, TaskParsingRules, FeatureParsingRules, BlockerParsingRul
 import { matchesAny, createSafeRegex } from '../utils/configUtils';
 import { RegexCache, getGlobalRegexCache } from '../utils/RegexCache';
 import {
-  ParseResult,
-  ParseError,
-  ParseWarning,
-  TaskParseResult,
   Recurrence,
   RecurrenceFrequency,
-  emptyParseResult,
-  createParseError,
-  createParseWarning,
 } from '../types/parsing';
 
 /**
@@ -223,91 +216,6 @@ export class MarkdownParser {
     }
 
     return tasks;
-  }
-
-  /**
-   * Extract tasks with full error tracking (v3 enhanced method)
-   * Returns ParseResult with errors and warnings for better visibility
-   */
-  extractTasksWithErrors(content: string, filters?: TaskFilters): ParseResult<Task[]> {
-    const startTime = Date.now();
-    const tasks: Task[] = [];
-    const errors: ParseError[] = [];
-    const warnings: ParseWarning[] = [];
-    const lines = content.split('\n');
-
-    const taskPattern = this.regexCache.get('^\\s*-\\s*\\[([ xX])\\]\\s+(.+)$', 'i');
-    if (!taskPattern) {
-      return {
-        data: [],
-        errors: [createParseError('invalid_regex', 'Task pattern regex failed to compile')],
-        warnings: [],
-        stats: {
-          totalProcessed: 0,
-          successCount: 0,
-          errorCount: 1,
-          warningCount: 0,
-          durationMs: Date.now() - startTime,
-          linesProcessed: lines.length,
-        },
-      };
-    }
-
-    let totalProcessed = 0;
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const lineNumber = i + 1;
-      taskPattern.lastIndex = 0;
-      const match = taskPattern.exec(line);
-
-      if (match) {
-        totalProcessed++;
-        try {
-          const task = this.parseTaskLineEnhanced(line, match[1], match[2], lineNumber);
-
-          // Add warnings for missing metadata
-          if (!task.priority) {
-            warnings.push(createParseWarning(
-              'missing_priority',
-              `Task has no priority indicator`,
-              { line: lineNumber, suggestion: 'Add #P0, #P1, or #P2 tag' }
-            ));
-          }
-          if (!task.dueDate) {
-            warnings.push(createParseWarning(
-              'missing_date',
-              `Task has no due date`,
-              { line: lineNumber, suggestion: 'Add 📅 YYYY-MM-DD or due:: YYYY-MM-DD' }
-            ));
-          }
-
-          if (this.matchesFilters(task, filters)) {
-            tasks.push(task);
-          }
-        } catch (e) {
-          errors.push(createParseError(
-            'malformed_task',
-            `Failed to parse task: ${e instanceof Error ? e.message : String(e)}`,
-            { line: lineNumber, originalText: line }
-          ));
-        }
-      }
-    }
-
-    return {
-      data: tasks,
-      errors,
-      warnings,
-      stats: {
-        totalProcessed,
-        successCount: tasks.length,
-        errorCount: errors.length,
-        warningCount: warnings.length,
-        durationMs: Date.now() - startTime,
-        linesProcessed: lines.length,
-      },
-    };
   }
 
   /**

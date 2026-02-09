@@ -35,6 +35,7 @@ export default class ExcelAutomationPlugin extends Plugin {
   private vaultService: VaultService;
   configManager: ConfigManager;
   private pathValidator: PathValidator | null = null;
+  private dataAggregator: DataAggregator | null = null;
 
   async onload() {
     logger.info('Loading Excel Automation Plugin v4.0');
@@ -43,8 +44,8 @@ export default class ExcelAutomationPlugin extends Plugin {
     this.configManager = new ConfigManager(this);
     await this.configManager.initialize();
 
-    // Load legacy settings for backward compatibility
-    await this.loadSettings();
+    // Load legacy settings for backward compatibility (reuse data from ConfigManager)
+    await this.loadSettings(this.configManager.getRawData());
     this.vaultService = new VaultService(this.app);
 
     // Configure logger based on settings
@@ -149,9 +150,16 @@ export default class ExcelAutomationPlugin extends Plugin {
     }
   }
 
+  private getDataAggregator(): DataAggregator {
+    if (!this.dataAggregator) {
+      this.dataAggregator = new DataAggregator(this.app, this.settings, this.configManager);
+    }
+    return this.dataAggregator;
+  }
+
   private getPathValidator(): PathValidator {
     if (!this.pathValidator) {
-      this.pathValidator = this.getPathValidator();
+      this.pathValidator = new PathValidator(this.app, this.settings, this.configManager);
     }
     return this.pathValidator;
   }
@@ -160,8 +168,8 @@ export default class ExcelAutomationPlugin extends Plugin {
     logger.info('Unloading Excel Automation Plugin');
   }
 
-  async loadSettings() {
-    const loadedData = await this.loadData();
+  async loadSettings(preloadedData?: Record<string, unknown> | null) {
+    const loadedData = preloadedData !== undefined ? preloadedData : await this.loadData();
     this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
 
     // Ensure nested objects are properly merged
@@ -258,7 +266,7 @@ export default class ExcelAutomationPlugin extends Plugin {
     progress.start();
 
     try {
-      const aggregator = new DataAggregator(this.app, this.settings, this.configManager);
+      const aggregator = this.getDataAggregator();
       const generator = new WeeklyReportGenerator(this.app, this.settings, aggregator, this.configManager);
 
       const weekInfo = getCurrentWeekInfo();
@@ -307,7 +315,7 @@ export default class ExcelAutomationPlugin extends Plugin {
     progress.start();
 
     try {
-      const aggregator = new DataAggregator(this.app, this.settings, this.configManager);
+      const aggregator = this.getDataAggregator();
       const generator = new QuarterlyReportGenerator(this.app, this.settings, aggregator, this.configManager);
 
       const quarterInfo = getCurrentQuarterInfo();
@@ -374,7 +382,7 @@ export default class ExcelAutomationPlugin extends Plugin {
     progress.start();
 
     try {
-      const aggregator = new DataAggregator(this.app, this.settings, this.configManager);
+      const aggregator = this.getDataAggregator();
       const generator = new FeatureReportGenerator(this.app, this.settings, aggregator, this.configManager);
 
       const date = new Date();
@@ -432,7 +440,7 @@ export default class ExcelAutomationPlugin extends Plugin {
     progress.start();
 
     try {
-      const aggregator = new DataAggregator(this.app, this.settings, this.configManager);
+      const aggregator = this.getDataAggregator();
       const generator = new BlockerReportGenerator(this.app, this.settings, aggregator, this.configManager);
 
       const date = new Date();
