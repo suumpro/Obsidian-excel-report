@@ -6,7 +6,7 @@
 import { App, PluginSettingTab, Setting, Notice, TFolder } from 'obsidian';
 import type ExcelAutomationPlugin from '../main';
 import { LocaleCode, ScanMode } from '../types/config';
-import { getPresetDisplayNames, PresetName } from '../config/presets';
+import { getPresetDisplayNames } from '../config/presets';
 import { FolderSuggestModal } from './SuggestModals';
 
 export class ExcelAutomationSettingsTab extends PluginSettingTab {

@@ -22,7 +22,7 @@ export class StyleManager {
   private alternateFill: ExcelJS.Fill;
   private border: Partial<ExcelJS.Borders>;
 
-  constructor(private styling: StylingOptions) {
+  constructor(styling: StylingOptions) {
     // Initialize fills with colors from settings
     this.headerFill = {
       type: 'pattern',

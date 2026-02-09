@@ -153,7 +153,7 @@ export class MetricsCalculator {
     dashboard: DashboardData,
     roadmap: RoadmapData,
     blockerData: BlockerData,
-    quarterly: QuarterlyData
+    _quarterly: QuarterlyData
   ): Metrics {
     const metrics = emptyMetrics();
 

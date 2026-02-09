@@ -12,8 +12,7 @@ import { ConfigManager } from '../services/ConfigManager';
 import { MetricsCalculator } from '../services/MetricsCalculator';
 import { ExcelAutomationSettings } from '../types/settings';
 import { LocaleStrings } from '../types/config';
-import { QuarterlyData, Metrics, TaskMasterData, WeeklyBreakdown, CustomerRequestData, CustomerRequest } from '../types/data';
-import { QuarterInfo, Task } from '../types/models';
+import { QuarterlyData, Metrics, TaskMasterData, CustomerRequestData } from '../types/data';
 import { getCurrentQuarterInfo, formatDate, isOverdue } from '../utils/dateUtils';
 import { logger } from '../utils/logger';
 import { isCompleted, isInProgress, isScheduled } from '../utils/statusUtils';
@@ -25,7 +24,7 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
   private localeStrings: LocaleStrings;
 
   constructor(
-    private app: App,
+    app: App,
     settings: ExcelAutomationSettings,
     aggregator?: DataAggregator,
     configManager?: ConfigManager
@@ -46,7 +45,6 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
     logger.info(`Generating Quarterly Report for Q${targetQuarter} ${targetYear}...`);
 
     // Load all quarterly data in parallel
-    const currentQuarter = targetQuarter;
     const [q1Data, taskMaster, customerRequests] = await Promise.all([
       this.aggregator.loadQuarterlyData(targetQuarter),
       this.aggregator.loadTaskMasterData(targetQuarter),
@@ -87,7 +85,7 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
    * Uses localized strings for labels
    */
   private createSheet1Overview(
-    data: QuarterlyData,
+    _data: QuarterlyData,
     metrics: Metrics,
     quarter: number,
     year: number
@@ -295,9 +293,8 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
    * Sheet 4: Progress Analytics
    * Uses localized strings for sheet name and labels
    */
-  private createSheet4Analytics(data: QuarterlyData, metrics: Metrics): void {
+  private createSheet4Analytics(_data: QuarterlyData, metrics: Metrics): void {
     const sheets = this.localeStrings.sheets;
-    const kpiLabels = this.localeStrings.kpi;
     const ws = this.addSheet(sheets.progressAnalytics);
     const sm = this.getStyleManager();
     let row = 1;

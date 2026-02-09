@@ -104,22 +104,6 @@ export class DataAggregator {
   }
 
   /**
-   * Get source path from config or legacy settings
-   */
-  private getSourcePath(key: string): string {
-    if (this.configManager) {
-      const sources = this.configManager.getSources();
-      // Handle quarterly sources specially
-      if (key.startsWith('q') && key.endsWith('Status')) {
-        const quarter = `q${key.charAt(1)}` as 'q1' | 'q2' | 'q3' | 'q4';
-        return sources.quarterly?.[quarter] || '';
-      }
-      return (sources as unknown as Record<string, string>)[key] || '';
-    }
-    return (this.settings.sources as unknown as Record<string, string>)[key] || '';
-  }
-
-  /**
    * Load dashboard data from PM Dashboard file
    */
   async loadDashboardData(): Promise<DashboardData> {

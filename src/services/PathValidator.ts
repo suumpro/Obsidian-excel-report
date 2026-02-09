@@ -7,7 +7,6 @@ import { App } from 'obsidian';
 import { ConfigManager } from './ConfigManager';
 import { VaultService } from './VaultService';
 import { ExcelAutomationSettings } from '../types/settings';
-import { logger } from '../utils/logger';
 
 export interface ValidationResult {
   valid: boolean;

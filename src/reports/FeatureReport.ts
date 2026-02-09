@@ -23,7 +23,7 @@ export class FeatureReportGenerator extends ExcelGenerator {
   private localeStrings: LocaleStrings;
 
   constructor(
-    private app: App,
+    app: App,
     settings: ExcelAutomationSettings,
     aggregator?: DataAggregator,
     configManager?: ConfigManager
@@ -90,9 +90,6 @@ export class FeatureReportGenerator extends ExcelGenerator {
     const completed = features.filter(f => isCompleted(f.status)).length;
     const inProgress = features.filter(f => isInProgress(f.status)).length;
     const pending = features.filter(f => isPending(f.status)).length;
-    const avgProgress = features.length > 0
-      ? Math.round(features.reduce((sum, f) => sum + f.progress, 0) / features.length)
-      : 0;
     const completionRate = features.length > 0 ? Math.round((completed / features.length) * 100) : 0;
 
     // KPI Dashboard Boxes
@@ -172,7 +169,6 @@ export class FeatureReportGenerator extends ExcelGenerator {
   private createSheet2ByPriority(roadmap: RoadmapData): void {
     const sheets = this.localeStrings.sheets;
     const cols = this.localeStrings.columns;
-    const status = this.localeStrings.status;
     const kpiLabels = this.localeStrings.kpi;
     const priorityLabels = this.localeStrings.priority;
     const ws = this.addSheet(sheets.byPriority);

@@ -14,8 +14,8 @@ import { MetricsCalculator } from '../services/MetricsCalculator';
 import { ExcelAutomationSettings } from '../types/settings';
 import { LocaleStrings } from '../types/config';
 import { getDefaultLocaleStrings } from '../config/presets';
-import { DashboardData, RoadmapData, BlockerData, QuarterlyData, Metrics, CoordinationItem, MilestoneItem, PlaybookItem, TaskMasterData, WeeklyBreakdown, CustomerRequestData, CustomerRequest } from '../types/data';
-import { Task, WeekInfo, Priority, Blocker } from '../types/models';
+import { DashboardData, RoadmapData, BlockerData, QuarterlyData, Metrics, CoordinationItem, MilestoneItem, PlaybookItem, TaskMasterData, CustomerRequestData } from '../types/data';
+import { WeekInfo, Priority, Blocker } from '../types/models';
 import { getCurrentWeekInfo, formatDate, getWeekRange } from '../utils/dateUtils';
 import { logger } from '../utils/logger';
 import { isResolved, isInProgress, isScheduled, isBlocker, isCompleted } from '../utils/statusUtils';
@@ -27,7 +27,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
   private localeStrings: LocaleStrings;
 
   constructor(
-    private app: App,
+    app: App,
     settings: ExcelAutomationSettings,
     aggregator?: DataAggregator,
     configManager?: ConfigManager
@@ -414,7 +414,6 @@ export class WeeklyReportGenerator extends ExcelGenerator {
     row += 2;
 
     // KPI Dashboard Boxes
-    const overallCompletion = Math.round((metrics.completedTasks / Math.max(metrics.totalTasks, 1)) * 100);
     const kpiBoxes = [
       { label: kpi.totalTasks, value: metrics.totalTasks, color: 'D9E1F2' },
       { label: kpi.completed, value: metrics.completedTasks, trend: 'up' as const, color: 'C6EFCE' },

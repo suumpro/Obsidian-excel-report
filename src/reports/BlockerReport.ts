@@ -22,7 +22,7 @@ export class BlockerReportGenerator extends ExcelGenerator {
   private localeStrings: LocaleStrings;
 
   constructor(
-    private app: App,
+    app: App,
     settings: ExcelAutomationSettings,
     aggregator?: DataAggregator,
     configManager?: ConfigManager

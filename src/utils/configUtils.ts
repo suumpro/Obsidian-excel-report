@@ -165,7 +165,7 @@ function validateParsingConfig(
 function validateStyleConfig(
   style: any,
   errors: string[],
-  warnings: string[]
+  _warnings: string[]
 ): void {
   if (style.colors) {
     // Validate hex colors

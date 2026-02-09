@@ -73,7 +73,7 @@ export class ExcelGenerator {
   /**
    * Add a new worksheet
    */
-  addSheet(title: string, index?: number): ExcelJS.Worksheet {
+  addSheet(title: string, _index?: number): ExcelJS.Worksheet {
     const wb = this.getWorkbook();
 
     const ws = wb.addWorksheet(title, {
