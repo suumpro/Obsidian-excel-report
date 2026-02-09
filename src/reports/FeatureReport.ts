@@ -8,7 +8,6 @@ import { App } from 'obsidian';
 import { ExcelGenerator } from '../generators/ExcelGenerator';
 import { DataAggregator } from '../services/DataAggregator';
 import { ConfigManager } from '../services/ConfigManager';
-import { MetricsCalculator } from '../services/MetricsCalculator';
 import { ExcelAutomationSettings } from '../types/settings';
 import { LocaleStrings } from '../types/config';
 import { RoadmapData } from '../types/data';
@@ -317,7 +316,9 @@ export class FeatureReportGenerator extends ExcelGenerator {
     const summaryData = sortedCycles.map(cycle => {
       const features = cycleGroups[cycle];
       const completedCount = features.filter(f => isCompleted(f.status)).length;
-      const avgProgress = Math.round(features.reduce((sum, f) => sum + f.progress, 0) / features.length);
+      const avgProgress = features.length > 0
+        ? Math.round(features.reduce((sum, f) => sum + f.progress, 0) / features.length)
+        : 0;
       const allComplete = completedCount === features.length;
       const cycleStatus = allComplete ? status.completed : completedCount > 0 ? status.inProgress : status.pending;
       return [cycle, features.length, completedCount, `${avgProgress}%`, cycleStatus];

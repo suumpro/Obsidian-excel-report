@@ -5,16 +5,11 @@
 import {
   deepMerge,
   validateConfig,
-  isValidHexColor,
-  hexToARGB,
   createSafeRegex,
   matchesAny,
   cloneConfig,
-  getNestedValue,
-  setNestedValue,
-  diffConfigs,
 } from '../src/utils/configUtils';
-import { PluginConfig } from '../src/types/config';
+import type { PluginConfig } from '../src/types/config';
 
 describe('configUtils', () => {
   describe('deepMerge', () => {
@@ -228,43 +223,6 @@ describe('configUtils', () => {
     });
   });
 
-  describe('isValidHexColor', () => {
-    it('should validate valid hex colors', () => {
-      expect(isValidHexColor('#000000')).toBe(true);
-      expect(isValidHexColor('#FFFFFF')).toBe(true);
-      expect(isValidHexColor('#4472C4')).toBe(true);
-      expect(isValidHexColor('#ff6b6b')).toBe(true);
-    });
-
-    it('should reject invalid hex colors', () => {
-      expect(isValidHexColor('000000')).toBe(false);
-      expect(isValidHexColor('#FFF')).toBe(false);
-      expect(isValidHexColor('#FFFFFFFF')).toBe(false);
-      expect(isValidHexColor('red')).toBe(false);
-      expect(isValidHexColor('#GGGGGG')).toBe(false);
-      expect(isValidHexColor('')).toBe(false);
-    });
-  });
-
-  describe('hexToARGB', () => {
-    it('should convert hex to ARGB with # prefix', () => {
-      expect(hexToARGB('#4472C4')).toBe('FF4472C4');
-      expect(hexToARGB('#000000')).toBe('FF000000');
-      expect(hexToARGB('#ffffff')).toBe('FFFFFFFF');
-    });
-
-    it('should convert hex to ARGB without # prefix', () => {
-      expect(hexToARGB('4472C4')).toBe('FF4472C4');
-      expect(hexToARGB('000000')).toBe('FF000000');
-      expect(hexToARGB('ffffff')).toBe('FFFFFFFF');
-    });
-
-    it('should uppercase the result', () => {
-      expect(hexToARGB('#ff6b6b')).toBe('FFFF6B6B');
-      expect(hexToARGB('abc123')).toBe('FFABC123');
-    });
-  });
-
   describe('createSafeRegex', () => {
     it('should create valid regex', () => {
       const regex = createSafeRegex('test');
@@ -353,122 +311,4 @@ describe('configUtils', () => {
     });
   });
 
-  describe('getNestedValue', () => {
-    const obj = {
-      a: 1,
-      b: {
-        c: 2,
-        d: {
-          e: 3,
-          f: [4, 5, 6],
-        },
-      },
-    };
-
-    it('should get top-level value', () => {
-      expect(getNestedValue(obj, 'a')).toBe(1);
-    });
-
-    it('should get nested value', () => {
-      expect(getNestedValue(obj, 'b.c')).toBe(2);
-      expect(getNestedValue(obj, 'b.d.e')).toBe(3);
-    });
-
-    it('should get array value', () => {
-      expect(getNestedValue(obj, 'b.d.f')).toEqual([4, 5, 6]);
-    });
-
-    it('should return undefined for missing key', () => {
-      expect(getNestedValue(obj, 'x')).toBeUndefined();
-      expect(getNestedValue(obj, 'b.x')).toBeUndefined();
-      expect(getNestedValue(obj, 'b.d.x')).toBeUndefined();
-    });
-  });
-
-  describe('setNestedValue', () => {
-    it('should set top-level value', () => {
-      const obj: any = { a: 1 };
-      setNestedValue(obj, 'a', 2);
-      expect(obj.a).toBe(2);
-    });
-
-    it('should set nested value', () => {
-      const obj: any = { a: { b: 1 } };
-      setNestedValue(obj, 'a.b', 2);
-      expect(obj.a.b).toBe(2);
-    });
-
-    it('should create missing intermediate objects', () => {
-      const obj: any = {};
-      setNestedValue(obj, 'a.b.c', 3);
-      expect(obj.a.b.c).toBe(3);
-    });
-
-    it('should set deeply nested value', () => {
-      const obj: any = {};
-      setNestedValue(obj, 'a.b.c.d.e', 5);
-      expect(obj.a.b.c.d.e).toBe(5);
-    });
-
-    it('should handle empty path gracefully', () => {
-      const obj: any = { a: 1 };
-      setNestedValue(obj, '', 2);
-      expect(obj.a).toBe(1);
-    });
-  });
-
-  describe('diffConfigs', () => {
-    it('should return empty array for identical configs', () => {
-      const config1: any = { a: 1, b: { c: 2 } };
-      const config2: any = { a: 1, b: { c: 2 } };
-      const diffs = diffConfigs(config1, config2);
-      expect(diffs).toEqual([]);
-    });
-
-    it('should detect top-level differences', () => {
-      const base: any = { a: 1, b: 2 };
-      const modified: any = { a: 1, b: 3 };
-      const diffs = diffConfigs(base, modified);
-      expect(diffs).toContain('b');
-    });
-
-    it('should detect nested differences', () => {
-      const base: any = { a: { b: 1, c: 2 } };
-      const modified: any = { a: { b: 1, c: 3 } };
-      const diffs = diffConfigs(base, modified);
-      expect(diffs).toContain('a.c');
-    });
-
-    it('should detect added keys', () => {
-      const base: any = { a: 1 };
-      const modified: any = { a: 1, b: 2 };
-      const diffs = diffConfigs(base, modified);
-      expect(diffs).toContain('b');
-    });
-
-    it('should detect removed keys', () => {
-      const base: any = { a: 1, b: 2 };
-      const modified: any = { a: 1 };
-      const diffs = diffConfigs(base, modified);
-      expect(diffs).toContain('b');
-    });
-
-    it('should detect multiple differences at various depths', () => {
-      const base: any = {
-        a: 1,
-        b: { c: 2, d: { e: 3 } },
-        f: 4,
-      };
-      const modified: any = {
-        a: 1,
-        b: { c: 5, d: { e: 3 } },
-        f: 6,
-      };
-      const diffs = diffConfigs(base, modified);
-      expect(diffs).toContain('b.c');
-      expect(diffs).toContain('f');
-      expect(diffs).not.toContain('a');
-      expect(diffs).not.toContain('b.d.e');
-    });
-  });
 });

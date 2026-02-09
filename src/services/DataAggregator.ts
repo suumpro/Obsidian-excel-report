@@ -29,6 +29,7 @@ import {
 } from '../types/data';
 import { Feature, Priority } from '../types/models';
 import { logger } from '../utils/logger';
+import { parseDate, getQuarter } from '../utils/dateUtils';
 import { isCompleted } from '../utils/statusUtils';
 
 export class DataAggregator {
@@ -301,30 +302,20 @@ export class DataAggregator {
       }
 
       // Group by quarter (based on completion date)
-      const q1Features = features.filter(f =>
-        f.completionDate?.includes('Q1') ||
-        f.completionDate?.includes('1월') ||
-        f.completionDate?.includes('2월') ||
-        f.completionDate?.includes('3월')
-      );
-      const q2Features = features.filter(f =>
-        f.completionDate?.includes('Q2') ||
-        f.completionDate?.includes('4월') ||
-        f.completionDate?.includes('5월') ||
-        f.completionDate?.includes('6월')
-      );
-      const q3Features = features.filter(f =>
-        f.completionDate?.includes('Q3') ||
-        f.completionDate?.includes('7월') ||
-        f.completionDate?.includes('8월') ||
-        f.completionDate?.includes('9월')
-      );
-      const q4Features = features.filter(f =>
-        f.completionDate?.includes('Q4') ||
-        f.completionDate?.includes('10월') ||
-        f.completionDate?.includes('11월') ||
-        f.completionDate?.includes('12월')
-      );
+      // Supports "Q1"-"Q4" markers and any parseable date string (locale-agnostic)
+      function getFeatureQuarter(f: Feature): number | null {
+        if (!f.completionDate) return null;
+        for (let q = 1; q <= 4; q++) {
+          if (f.completionDate.includes(`Q${q}`)) return q;
+        }
+        const parsed = parseDate(f.completionDate);
+        return parsed ? getQuarter(parsed) : null;
+      }
+
+      const q1Features = features.filter(f => getFeatureQuarter(f) === 1);
+      const q2Features = features.filter(f => getFeatureQuarter(f) === 2);
+      const q3Features = features.filter(f => getFeatureQuarter(f) === 3);
+      const q4Features = features.filter(f => getFeatureQuarter(f) === 4);
 
       logger.debug(`Loaded roadmap: ${features.length} features`);
 

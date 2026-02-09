@@ -6,7 +6,6 @@
 import {
   PluginConfig,
   ConfigValidationResult,
-  CONFIG_VERSION,
   LocaleCode,
 } from '../types/config';
 
@@ -182,18 +181,8 @@ function validateStyleConfig(
 /**
  * Validate hex color format
  */
-export function isValidHexColor(color: string): boolean {
+function isValidHexColor(color: string): boolean {
   return /^#[0-9A-Fa-f]{6}$/.test(color);
-}
-
-/**
- * Convert hex color to ARGB format for ExcelJS
- */
-export function hexToARGB(hex: string): string {
-  // Remove # if present
-  const clean = hex.replace('#', '');
-  // Add FF alpha channel
-  return `FF${clean.toUpperCase()}`;
 }
 
 /**
@@ -233,58 +222,3 @@ export function cloneConfig<T>(config: T): T {
   return JSON.parse(JSON.stringify(config));
 }
 
-/**
- * Get a nested value from an object using dot notation
- */
-export function getNestedValue(obj: any, path: string): any {
-  return path.split('.').reduce((current, key) => current?.[key], obj);
-}
-
-/**
- * Set a nested value in an object using dot notation
- */
-export function setNestedValue(obj: any, path: string, value: any): void {
-  const keys = path.split('.');
-  const lastKey = keys.pop();
-
-  if (!lastKey) return;
-
-  const target = keys.reduce((current, key) => {
-    if (!current[key]) current[key] = {};
-    return current[key];
-  }, obj);
-
-  target[lastKey] = value;
-}
-
-/**
- * Compare two configs and return differences
- */
-export function diffConfigs(
-  base: PluginConfig,
-  modified: PluginConfig
-): string[] {
-  const differences: string[] = [];
-
-  function compare(basePath: string, baseObj: any, modObj: any): void {
-    const allKeys = new Set([
-      ...Object.keys(baseObj || {}),
-      ...Object.keys(modObj || {}),
-    ]);
-
-    for (const key of allKeys) {
-      const path = basePath ? `${basePath}.${key}` : key;
-      const baseValue = baseObj?.[key];
-      const modValue = modObj?.[key];
-
-      if (isObject(baseValue) && isObject(modValue)) {
-        compare(path, baseValue, modValue);
-      } else if (JSON.stringify(baseValue) !== JSON.stringify(modValue)) {
-        differences.push(path);
-      }
-    }
-  }
-
-  compare('', base, modified);
-  return differences;
-}
