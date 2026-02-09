@@ -200,8 +200,8 @@ export class ConfigManager {
       }
 
       // Add output config if not present
-      if (!(upgraded as any).output) {
-        (upgraded as any).output = {
+      if (!upgraded.output) {
+        upgraded.output = {
           baseDir: '',
           weeklySubdir: '',
           quarterlySubdir: '',

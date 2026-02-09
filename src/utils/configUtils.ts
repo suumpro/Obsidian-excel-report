@@ -13,17 +13,17 @@ import {
  * Deep merge two objects, with source taking precedence
  */
 export function deepMerge<T extends object>(target: T, source: Partial<T>, overrides?: Partial<T>): T {
-  const result = { ...target };
+  const result = { ...target } as Record<string, unknown>;
 
   for (const key in source) {
     if (source.hasOwnProperty(key)) {
       const sourceValue = source[key];
-      const targetValue = target[key];
+      const targetValue = (target as Record<string, unknown>)[key];
 
       if (isObject(sourceValue) && isObject(targetValue)) {
-        (result as any)[key] = deepMerge(targetValue, sourceValue as any);
+        result[key] = deepMerge(targetValue as Record<string, unknown>, sourceValue as Partial<Record<string, unknown>>);
       } else if (sourceValue !== undefined) {
-        (result as any)[key] = sourceValue;
+        result[key] = sourceValue;
       }
     }
   }
@@ -31,12 +31,12 @@ export function deepMerge<T extends object>(target: T, source: Partial<T>, overr
   if (overrides) {
     for (const key in overrides) {
       if (overrides.hasOwnProperty(key) && overrides[key] !== undefined) {
-        (result as any)[key] = overrides[key];
+        result[key] = overrides[key];
       }
     }
   }
 
-  return result;
+  return result as T;
 }
 
 /**

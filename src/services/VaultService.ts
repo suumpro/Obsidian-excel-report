@@ -2,7 +2,7 @@
  * Wrapper for Obsidian Vault API operations
  */
 
-import { App, TFile, TFolder, Vault, normalizePath } from 'obsidian';
+import { App, TFile, TFolder, Vault, normalizePath, FileSystemAdapter } from 'obsidian';
 
 export class VaultService {
   constructor(private app: App) {}
@@ -121,7 +121,11 @@ export class VaultService {
    * Get vault root path
    */
   getVaultPath(): string {
-    return (this.app.vault.adapter as any).basePath || '';
+    const adapter = this.app.vault.adapter;
+    if (adapter instanceof FileSystemAdapter) {
+      return adapter.getBasePath();
+    }
+    return '';
   }
 
   /**

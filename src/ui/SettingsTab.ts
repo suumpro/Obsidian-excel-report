@@ -225,11 +225,11 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
       .setDesc('Path to Q1 Task Master file')
       .addText(text => text
         .setPlaceholder('JIRA/Q1_Tasks.md')
-        .setValue((sourcesConfig as any)?.taskMasters?.q1 || '')
+        .setValue(sourcesConfig?.taskMasters?.q1 || '')
         .onChange(async (value) => {
           await configManager?.updateSources({
-            taskMasters: { ...(sourcesConfig as any)?.taskMasters, q1: value }
-          } as any);
+            taskMasters: { ...(sourcesConfig?.taskMasters || { q1: '', q2: '', q3: '', q4: '', index: '' }), q1: value }
+          });
         }));
 
     new Setting(containerEl)
@@ -237,11 +237,11 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
       .setDesc('Path to Q2 Task Master file')
       .addText(text => text
         .setPlaceholder('JIRA/Q2_Tasks.md')
-        .setValue((sourcesConfig as any)?.taskMasters?.q2 || '')
+        .setValue(sourcesConfig?.taskMasters?.q2 || '')
         .onChange(async (value) => {
           await configManager?.updateSources({
-            taskMasters: { ...(sourcesConfig as any)?.taskMasters, q2: value }
-          } as any);
+            taskMasters: { ...(sourcesConfig?.taskMasters || { q1: '', q2: '', q3: '', q4: '', index: '' }), q2: value }
+          });
         }));
 
     new Setting(containerEl)
@@ -249,11 +249,11 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
       .setDesc('Path to Q3 Task Master file')
       .addText(text => text
         .setPlaceholder('JIRA/Q3_Tasks.md')
-        .setValue((sourcesConfig as any)?.taskMasters?.q3 || '')
+        .setValue(sourcesConfig?.taskMasters?.q3 || '')
         .onChange(async (value) => {
           await configManager?.updateSources({
-            taskMasters: { ...(sourcesConfig as any)?.taskMasters, q3: value }
-          } as any);
+            taskMasters: { ...(sourcesConfig?.taskMasters || { q1: '', q2: '', q3: '', q4: '', index: '' }), q3: value }
+          });
         }));
 
     new Setting(containerEl)
@@ -261,11 +261,11 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
       .setDesc('Path to Q4 Task Master file')
       .addText(text => text
         .setPlaceholder('JIRA/Q4_Tasks.md')
-        .setValue((sourcesConfig as any)?.taskMasters?.q4 || '')
+        .setValue(sourcesConfig?.taskMasters?.q4 || '')
         .onChange(async (value) => {
           await configManager?.updateSources({
-            taskMasters: { ...(sourcesConfig as any)?.taskMasters, q4: value }
-          } as any);
+            taskMasters: { ...(sourcesConfig?.taskMasters || { q1: '', q2: '', q3: '', q4: '', index: '' }), q4: value }
+          });
         }));
 
     new Setting(containerEl)
@@ -273,11 +273,11 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
       .setDesc('Path to Task Master Index file')
       .addText(text => text
         .setPlaceholder('JIRA/Index.md')
-        .setValue((sourcesConfig as any)?.taskMasters?.index || '')
+        .setValue(sourcesConfig?.taskMasters?.index || '')
         .onChange(async (value) => {
           await configManager?.updateSources({
-            taskMasters: { ...(sourcesConfig as any)?.taskMasters, index: value }
-          } as any);
+            taskMasters: { ...(sourcesConfig?.taskMasters || { q1: '', q2: '', q3: '', q4: '', index: '' }), index: value }
+          });
         }));
 
     new Setting(containerEl)
@@ -285,9 +285,9 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
       .setDesc('Path to Customer Requests file')
       .addText(text => text
         .setPlaceholder('Customer_Requests.md')
-        .setValue((sourcesConfig as any)?.customerRequests || '')
+        .setValue(sourcesConfig?.customerRequests || '')
         .onChange(async (value) => {
-          await configManager?.updateSources({ customerRequests: value } as any);
+          await configManager?.updateSources({ customerRequests: value });
         }));
 
     // ===== Output Configuration Section =====
@@ -304,7 +304,7 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .onChange(async (value) => {
           const config = configManager?.get();
           if (config) {
-            (config as any).output = { ...outputConfig, weeklySubdir: value };
+            config.output = { ...(outputConfig || { baseDir: '', weeklySubdir: '', quarterlySubdir: '', featureSubdir: '', blockerSubdir: '' }), weeklySubdir: value };
             await configManager?.updateAdvanced({});
           }
         }));
@@ -318,7 +318,7 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .onChange(async (value) => {
           const config = configManager?.get();
           if (config) {
-            (config as any).output = { ...outputConfig, quarterlySubdir: value };
+            config.output = { ...(outputConfig || { baseDir: '', weeklySubdir: '', quarterlySubdir: '', featureSubdir: '', blockerSubdir: '' }), quarterlySubdir: value };
             await configManager?.updateAdvanced({});
           }
         }));
@@ -332,7 +332,7 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .onChange(async (value) => {
           const config = configManager?.get();
           if (config) {
-            (config as any).output = { ...outputConfig, featureSubdir: value };
+            config.output = { ...(outputConfig || { baseDir: '', weeklySubdir: '', quarterlySubdir: '', featureSubdir: '', blockerSubdir: '' }), featureSubdir: value };
             await configManager?.updateAdvanced({});
           }
         }));
@@ -346,7 +346,7 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
         .onChange(async (value) => {
           const config = configManager?.get();
           if (config) {
-            (config as any).output = { ...outputConfig, blockerSubdir: value };
+            config.output = { ...(outputConfig || { baseDir: '', weeklySubdir: '', quarterlySubdir: '', featureSubdir: '', blockerSubdir: '' }), blockerSubdir: value };
             await configManager?.updateAdvanced({});
           }
         }));
