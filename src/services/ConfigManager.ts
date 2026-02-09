@@ -20,6 +20,7 @@ import {
   DEFAULT_STYLE_CONFIG,
   DEFAULT_SOURCE_MAPPINGS,
   OutputConfig,
+  ScanMode,
 } from '../types/config';
 import { deepMerge, validateConfig, cloneConfig } from '../utils/configUtils';
 import { getPreset, PresetName, getDefaultPresetName } from '../config/presets';
@@ -66,6 +67,13 @@ export class ConfigManager {
     } else {
       // Valid v2 config
       this.config = savedData;
+    }
+
+    // Ensure scan config exists (migration for pre-scan configs)
+    if (this.config.scanMode === undefined) {
+      // Existing users with source mappings → files mode; new users → folder mode
+      this.config.scanMode = this._isFirstRun ? 'folder' : 'files';
+      this.config.scanFolders = this.config.scanFolders || [];
     }
 
     // Validate and save
@@ -304,6 +312,20 @@ export class ConfigManager {
     return this.config.output || null;
   }
 
+  /**
+   * Get scan mode ('folder' or 'files')
+   */
+  getScanMode(): ScanMode {
+    return this.config.scanMode || 'folder';
+  }
+
+  /**
+   * Get folders to scan in folder mode
+   */
+  getScanFolders(): string[] {
+    return this.config.scanFolders || [];
+  }
+
   // ========== SETTERS ==========
 
   /**
@@ -358,6 +380,15 @@ export class ConfigManager {
    */
   async updateAdvanced(advanced: Partial<AdvancedSettings>): Promise<void> {
     this.config.advanced = deepMerge(this.config.advanced, advanced);
+    await this.save();
+  }
+
+  /**
+   * Update scan configuration
+   */
+  async updateScanConfig(scanMode: ScanMode, scanFolders: string[]): Promise<void> {
+    this.config.scanMode = scanMode;
+    this.config.scanFolders = scanFolders;
     await this.save();
   }
 

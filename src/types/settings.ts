@@ -115,6 +115,10 @@ export interface ExcelAutomationSettings {
   styling: StylingOptions;
   /** Advanced settings */
   advanced: AdvancedSettings;
+  /** Data source mode: 'folder' scans folders, 'files' uses individual file mappings */
+  scanMode: 'folder' | 'files';
+  /** Folders to scan in folder mode */
+  scanFolders: string[];
 }
 
 /**
@@ -187,4 +191,7 @@ export const DEFAULT_SETTINGS: ExcelAutomationSettings = {
     debug: false,
     logLevel: 'INFO',
   },
+
+  scanMode: 'folder',
+  scanFolders: [],
 };

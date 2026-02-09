@@ -138,11 +138,13 @@ export default class ExcelAutomationPlugin extends Plugin {
     const locale = this.configManager.getLocale();
     logger.info(`Excel Automation Plugin loaded (locale: ${locale})`);
 
-    // Show setup wizard on first run (all paths empty)
+    // Show setup wizard on first run (no paths or scan folders configured)
     const sources = this.configManager.getSources();
+    const scanFolders = this.configManager.getScanFolders();
     const hasAnyPath = sources.basePath || sources.dashboard || sources.roadmap ||
       sources.blockers || sources.features || sources.outputDir;
-    if (!hasAnyPath) {
+    const hasAnyScanFolder = scanFolders.length > 0;
+    if (!hasAnyPath && !hasAnyScanFolder) {
       // Delay slightly to let Obsidian UI settle
       setTimeout(() => {
         new SetupWizardModal(this.app, this.configManager).open();
@@ -162,6 +164,27 @@ export default class ExcelAutomationPlugin extends Plugin {
       this.pathValidator = new PathValidator(this.app, this.settings, this.configManager);
     }
     return this.pathValidator;
+  }
+
+  /**
+   * Check if scan mode is active and folders are configured
+   */
+  private isScanMode(): boolean {
+    return this.configManager.getScanMode() === 'folder';
+  }
+
+  /**
+   * Prepare aggregator for scan mode by preloading folder data
+   * Returns false if scan folders are not configured
+   */
+  private async prepareScanMode(aggregator: DataAggregator): Promise<boolean> {
+    const scanFolders = this.configManager.getScanFolders();
+    if (scanFolders.length === 0) {
+      showError('No scan folders configured. Open Settings to add folders.');
+      return false;
+    }
+    await aggregator.preloadFromScan(scanFolders);
+    return true;
   }
 
   onunload() {
@@ -252,21 +275,26 @@ export default class ExcelAutomationPlugin extends Plugin {
       return;
     }
 
-    // Validate paths before generating
-    const validator = this.getPathValidator();
-    const validation = validator.validate('weekly');
-    if (!validation.valid) {
-      const msg = validator.formatResult(validation, 'Weekly Report');
-      logger.warn(msg);
-      showError(`Missing source files for weekly report. Check Settings.\n${validation.missingRequired.join(', ')}`);
-      return;
+    const aggregator = this.getDataAggregator();
+
+    if (this.isScanMode()) {
+      if (!await this.prepareScanMode(aggregator)) return;
+    } else {
+      // Validate paths before generating (files mode only)
+      const validator = this.getPathValidator();
+      const validation = validator.validate('weekly');
+      if (!validation.valid) {
+        const msg = validator.formatResult(validation, 'Weekly Report');
+        logger.warn(msg);
+        showError(`Missing source files for weekly report. Check Settings.\n${validation.missingRequired.join(', ')}`);
+        return;
+      }
     }
 
     const progress = new ProgressReporter(WEEKLY_REPORT_STEPS);
     progress.start();
 
     try {
-      const aggregator = this.getDataAggregator();
       const generator = new WeeklyReportGenerator(this.app, this.settings, aggregator, this.configManager);
 
       const weekInfo = getCurrentWeekInfo();
@@ -311,16 +339,12 @@ export default class ExcelAutomationPlugin extends Plugin {
       return;
     }
 
-    const progress = new ProgressReporter(QUARTERLY_REPORT_STEPS);
-    progress.start();
+    const aggregator = this.getDataAggregator();
+    const quarterInfo = getCurrentQuarterInfo();
 
-    try {
-      const aggregator = this.getDataAggregator();
-      const generator = new QuarterlyReportGenerator(this.app, this.settings, aggregator, this.configManager);
-
-      const quarterInfo = getCurrentQuarterInfo();
-
-      // Validate paths before generating
+    if (this.isScanMode()) {
+      if (!await this.prepareScanMode(aggregator)) return;
+    } else {
       const validator = this.getPathValidator();
       const validation = validator.validate('quarterly', quarterInfo.quarter);
       if (!validation.valid) {
@@ -329,6 +353,13 @@ export default class ExcelAutomationPlugin extends Plugin {
         showError(`Missing source files for quarterly report. Check Settings.\n${validation.missingRequired.join(', ')}`);
         return;
       }
+    }
+
+    const progress = new ProgressReporter(QUARTERLY_REPORT_STEPS);
+    progress.start();
+
+    try {
+      const generator = new QuarterlyReportGenerator(this.app, this.settings, aggregator, this.configManager);
       const projectName = this.configManager.getSources().projectName || '';
       const filename = resolveFilename(
         reportsConfig.quarterly.filename || this.settings.reports.quarterly.filenameFormat,
@@ -368,21 +399,25 @@ export default class ExcelAutomationPlugin extends Plugin {
       return;
     }
 
-    // Validate paths before generating
-    const validator = this.getPathValidator();
-    const validation = validator.validate('feature');
-    if (!validation.valid) {
-      const msg = validator.formatResult(validation, 'Feature Report');
-      logger.warn(msg);
-      showError(`Missing source files for feature report. Check Settings.\n${validation.missingRequired.join(', ')}`);
-      return;
+    const aggregator = this.getDataAggregator();
+
+    if (this.isScanMode()) {
+      if (!await this.prepareScanMode(aggregator)) return;
+    } else {
+      const validator = this.getPathValidator();
+      const validation = validator.validate('feature');
+      if (!validation.valid) {
+        const msg = validator.formatResult(validation, 'Feature Report');
+        logger.warn(msg);
+        showError(`Missing source files for feature report. Check Settings.\n${validation.missingRequired.join(', ')}`);
+        return;
+      }
     }
 
     const progress = new ProgressReporter(FEATURE_REPORT_STEPS);
     progress.start();
 
     try {
-      const aggregator = this.getDataAggregator();
       const generator = new FeatureReportGenerator(this.app, this.settings, aggregator, this.configManager);
 
       const date = new Date();
@@ -426,21 +461,25 @@ export default class ExcelAutomationPlugin extends Plugin {
       return;
     }
 
-    // Validate paths before generating
-    const validator = this.getPathValidator();
-    const validation = validator.validate('blocker');
-    if (!validation.valid) {
-      const msg = validator.formatResult(validation, 'Blocker Report');
-      logger.warn(msg);
-      showError(`Missing source files for blocker report. Check Settings.\n${validation.missingRequired.join(', ')}`);
-      return;
+    const aggregator = this.getDataAggregator();
+
+    if (this.isScanMode()) {
+      if (!await this.prepareScanMode(aggregator)) return;
+    } else {
+      const validator = this.getPathValidator();
+      const validation = validator.validate('blocker');
+      if (!validation.valid) {
+        const msg = validator.formatResult(validation, 'Blocker Report');
+        logger.warn(msg);
+        showError(`Missing source files for blocker report. Check Settings.\n${validation.missingRequired.join(', ')}`);
+        return;
+      }
     }
 
     const progress = new ProgressReporter(BLOCKER_REPORT_STEPS);
     progress.start();
 
     try {
-      const aggregator = this.getDataAggregator();
       const generator = new BlockerReportGenerator(this.app, this.settings, aggregator, this.configManager);
 
       const date = new Date();

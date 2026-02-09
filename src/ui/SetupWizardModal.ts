@@ -6,13 +6,15 @@
 
 import { App, Modal, Setting, Notice, TFolder } from 'obsidian';
 import { ConfigManager } from '../services/ConfigManager';
-import { LocaleCode } from '../types/config';
+import { LocaleCode, ScanMode } from '../types/config';
 import { getPresetDisplayNames } from '../config/presets';
 import { FolderSuggestModal, FileSuggestModal } from './SuggestModals';
 
 interface WizardState {
   locale: LocaleCode;
   projectName: string;
+  scanMode: ScanMode;
+  scanFolders: string[];
   basePath: string;
   outputDir: string;
   dashboard: string;
@@ -24,7 +26,7 @@ interface WizardState {
 export class SetupWizardModal extends Modal {
   private configManager: ConfigManager;
   private currentStep: number = 0;
-  private totalSteps: number = 4;
+  private totalSteps: number = 5;
   private state: WizardState;
   private onComplete: () => void;
 
@@ -38,6 +40,8 @@ export class SetupWizardModal extends Modal {
     this.state = {
       locale: configManager.getLocale(),
       projectName: sources.projectName || '',
+      scanMode: configManager.getScanMode(),
+      scanFolders: [...configManager.getScanFolders()],
       basePath: sources.basePath || '',
       outputDir: sources.outputDir || '',
       dashboard: sources.dashboard || '',
@@ -80,9 +84,10 @@ export class SetupWizardModal extends Modal {
 
     switch (this.currentStep) {
       case 0: this.renderLanguageStep(content); break;
-      case 1: this.renderBasePathStep(content); break;
-      case 2: this.renderSourceFilesStep(content); break;
-      case 3: this.renderOutputStep(content); break;
+      case 1: this.renderScanModeStep(content); break;
+      case 2: this.renderBasePathStep(content); break;
+      case 3: this.renderSourceFilesStep(content); break;
+      case 4: this.renderOutputStep(content); break;
     }
 
     // Navigation buttons
@@ -151,6 +156,58 @@ export class SetupWizardModal extends Modal {
         }));
   }
 
+  private renderScanModeStep(container: HTMLElement): void {
+    container.createEl('h3', { text: 'Choose Data Source' });
+    container.createEl('p', {
+      text: 'How should the plugin find your tasks, features, and blockers?',
+    });
+
+    new Setting(container)
+      .setName('Scan Mode')
+      .setDesc('Folder Scan automatically discovers content from folders. File Mapping uses specific files.')
+      .addDropdown(dropdown => {
+        dropdown
+          .addOption('folder', 'Folder Scan (Recommended)')
+          .addOption('files', 'File Mapping (Advanced)')
+          .setValue(this.state.scanMode)
+          .onChange((value) => {
+            this.state.scanMode = value as ScanMode;
+            this.renderStep();
+          });
+      });
+
+    if (this.state.scanMode === 'folder') {
+      container.createEl('p', {
+        text: 'Add folders to scan. The plugin will find all markdown files and extract tasks, features, and blockers automatically.',
+        cls: 'wizard-hint',
+      });
+
+      for (let i = 0; i < this.state.scanFolders.length; i++) {
+        new Setting(container)
+          .setName(this.state.scanFolders[i])
+          .addButton(button => button
+            .setButtonText('Remove')
+            .setWarning()
+            .onClick(() => {
+              this.state.scanFolders.splice(i, 1);
+              this.renderStep();
+            }));
+      }
+
+      new Setting(container)
+        .setName('Add Folder')
+        .addButton(button => button
+          .setButtonText('Browse')
+          .setCta()
+          .onClick(() => {
+            new FolderSuggestModal(this.app, (folder: TFolder) => {
+              this.state.scanFolders.push(folder.path);
+              this.renderStep();
+            }).open();
+          }));
+    }
+  }
+
   private renderBasePathStep(container: HTMLElement): void {
     container.createEl('h3', { text: 'Set Base Path' });
     container.createEl('p', {
@@ -197,6 +254,26 @@ export class SetupWizardModal extends Modal {
   }
 
   private renderSourceFilesStep(container: HTMLElement): void {
+    if (this.state.scanMode === 'folder') {
+      container.createEl('h3', { text: 'Folder Scan Ready' });
+      container.createEl('p', {
+        text: 'Your scan folders are configured. The plugin will automatically discover tasks, features, and blockers from markdown files in those folders.',
+      });
+
+      if (this.state.scanFolders.length > 0) {
+        const list = container.createEl('ul');
+        for (const folder of this.state.scanFolders) {
+          list.createEl('li', { text: folder });
+        }
+      } else {
+        container.createEl('p', {
+          text: 'No scan folders added yet. You can add them later in Settings.',
+          cls: 'wizard-hint',
+        });
+      }
+      return;
+    }
+
     container.createEl('h3', { text: 'Source Files' });
     container.createEl('p', {
       text: 'Paths to your markdown source files, relative to the base path. You can configure these later in Settings.',
@@ -247,13 +324,22 @@ export class SetupWizardModal extends Modal {
     const items: [string, string][] = [
       ['Language', this.getLanguageLabel(this.state.locale)],
       ['Project Name', this.state.projectName || '(not set)'],
-      ['Base Path', this.state.basePath || '(not set)'],
-      ['Output Dir', this.state.outputDir || '(not set)'],
-      ['Dashboard', this.state.dashboard || '(not set)'],
-      ['Roadmap', this.state.roadmap || '(not set)'],
-      ['Blockers', this.state.blockers || '(not set)'],
-      ['Features', this.state.features || '(not set)'],
+      ['Scan Mode', this.state.scanMode === 'folder' ? 'Folder Scan' : 'File Mapping'],
     ];
+
+    if (this.state.scanMode === 'folder') {
+      items.push(['Scan Folders', this.state.scanFolders.join(', ') || '(none)']);
+    } else {
+      items.push(
+        ['Base Path', this.state.basePath || '(not set)'],
+        ['Dashboard', this.state.dashboard || '(not set)'],
+        ['Roadmap', this.state.roadmap || '(not set)'],
+        ['Blockers', this.state.blockers || '(not set)'],
+        ['Features', this.state.features || '(not set)'],
+      );
+    }
+
+    items.push(['Output Dir', this.state.outputDir || '(not set)']);
 
     for (const [label, value] of items) {
       const row = summary.createDiv('wizard-summary-row');
@@ -282,6 +368,9 @@ export class SetupWizardModal extends Modal {
     try {
       // Apply language/preset
       await this.configManager.setLocale(this.state.locale, true);
+
+      // Save scan configuration
+      await this.configManager.updateScanConfig(this.state.scanMode, this.state.scanFolders);
 
       // Update source mappings
       await this.configManager.updateSources({

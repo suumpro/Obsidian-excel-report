@@ -10,6 +10,7 @@ import { VaultService } from './VaultService';
 import { MarkdownParser } from './MarkdownParser';
 import { CacheManager, createCacheKey } from './CacheManager';
 import { ConfigManager } from './ConfigManager';
+import { VaultScanner } from './VaultScanner';
 import { ExcelAutomationSettings, SourceMappings } from '../types/settings';
 import {
   DashboardData,
@@ -27,6 +28,7 @@ import {
   emptyCustomerRequestData,
   emptyAnnualMasterData,
 } from '../types/data';
+import type { ScanResult } from '../types/scan';
 import { Feature, Priority } from '../types/models';
 import { logger } from '../utils/logger';
 import { parseDate, getQuarter } from '../utils/dateUtils';
@@ -37,6 +39,12 @@ export class DataAggregator {
   private parser: MarkdownParser;
   private cacheManager: CacheManager;
   private configManager?: ConfigManager;
+  private scanCache: {
+    dashboard: DashboardData;
+    roadmap: RoadmapData;
+    blockers: BlockerData;
+    quarterly: QuarterlyData;
+  } | null = null;
 
   constructor(
     private app: App,
@@ -69,6 +77,21 @@ export class DataAggregator {
    */
   clearCache() {
     this.cacheManager.clear();
+    this.scanCache = null;
+  }
+
+  /**
+   * Preload data from folder scan mode
+   * After calling this, individual load methods return the cached scan data
+   */
+  async preloadFromScan(scanFolders: string[]): Promise<void> {
+    const allData = await this.loadFromScan(scanFolders);
+    this.scanCache = {
+      dashboard: allData.dashboard,
+      roadmap: allData.roadmap,
+      blockers: allData.blockers,
+      quarterly: allData.quarterly,
+    };
   }
 
   /**
@@ -100,6 +123,7 @@ export class DataAggregator {
    * Load dashboard data from PM Dashboard file
    */
   async loadDashboardData(): Promise<DashboardData> {
+    if (this.scanCache) return this.scanCache.dashboard;
     const dashboardSource = this.configManager?.getSources().dashboard || this.settings.sources.dashboard;
     const path = this.getFullPath(dashboardSource);
     const cacheKey = createCacheKey('dashboard', path);
@@ -169,6 +193,7 @@ export class DataAggregator {
    * Load quarterly status data
    */
   async loadQuarterlyData(quarter: number): Promise<QuarterlyData> {
+    if (this.scanCache) return this.scanCache.quarterly;
     // Get source path from config or legacy settings
     let sourcePath = '';
     if (this.configManager) {
@@ -262,6 +287,7 @@ export class DataAggregator {
    * Load roadmap feature data
    */
   async loadRoadmapData(): Promise<RoadmapData> {
+    if (this.scanCache) return this.scanCache.roadmap;
     const roadmapSource = this.configManager?.getSources().roadmap || this.settings.sources.roadmap;
     const path = this.getFullPath(roadmapSource);
     const cacheKey = createCacheKey('roadmap', path);
@@ -345,6 +371,7 @@ export class DataAggregator {
    * Load blocker tracking data
    */
   async loadBlockerData(): Promise<BlockerData> {
+    if (this.scanCache) return this.scanCache.blockers;
     const blockersSource = this.configManager?.getSources().blockers || this.settings.sources.blockers;
     const path = this.getFullPath(blockersSource);
     const cacheKey = createCacheKey('blockers', path);
@@ -639,5 +666,168 @@ export class DataAggregator {
     ]);
 
     return { dashboard, roadmap, blockers, quarterly, taskMaster, annualMaster, customerRequests };
+  }
+
+  /**
+   * Load all data from folder scan mode
+   * Scans specified folders and converts results to standard data types
+   */
+  async loadFromScan(scanFolders: string[]): Promise<{
+    dashboard: DashboardData;
+    roadmap: RoadmapData;
+    blockers: BlockerData;
+    quarterly: QuarterlyData;
+    taskMaster: TaskMasterData;
+    annualMaster: AnnualMasterData;
+    customerRequests: CustomerRequestData;
+  }> {
+    const scanner = new VaultScanner(this.app, this.parser, this.cacheManager);
+    const scan = await scanner.scanMultipleFolders(scanFolders);
+
+    logger.info(
+      `[DataAggregator] Scan complete: ${scan.scannedFiles} files, ` +
+      `${scan.tasks.length} tasks, ${scan.features.length} features, ` +
+      `${scan.blockers.length} blockers`
+    );
+
+    const dashboard = this.buildDashboardFromScan(scan);
+    const roadmap = this.buildRoadmapFromScan(scan);
+    const blockers = this.buildBlockerDataFromScan(scan);
+    const quarterly = this.buildQuarterlyFromScan(scan);
+
+    return {
+      dashboard,
+      roadmap,
+      blockers,
+      quarterly,
+      taskMaster: emptyTaskMasterData(),
+      annualMaster: emptyAnnualMasterData(),
+      customerRequests: emptyCustomerRequestData(),
+    };
+  }
+
+  private buildDashboardFromScan(scan: ScanResult): DashboardData {
+    const allTasks = scan.tasks;
+    const p0Tasks = allTasks.filter(t => t.priority === 'P0');
+    const p1Tasks = allTasks.filter(t => t.priority === 'P1');
+    const p2Tasks = allTasks.filter(t => t.priority === 'P2');
+
+    const now = new Date();
+    const weekNumber = Math.ceil(
+      ((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / 86400000 + 1) / 7
+    );
+
+    return {
+      currentWeek: weekNumber,
+      currentCycle: 'C1',
+      currentDate: now.toISOString().split('T')[0],
+      p0Tasks,
+      p1Tasks,
+      p2Tasks,
+      allTasks,
+      metadata: { scanMode: true, scannedFiles: scan.scannedFiles },
+      coordination: [],
+      milestones: [],
+      playbook: [],
+    };
+  }
+
+  private buildRoadmapFromScan(scan: ScanResult): RoadmapData {
+    const features = scan.features;
+
+    const byPriority: Record<Priority, Feature[]> = {
+      P0: features.filter(f => f.priority === 'P0'),
+      P1: features.filter(f => f.priority === 'P1'),
+      P2: features.filter(f => f.priority === 'P2'),
+    };
+
+    const byStatus: Record<string, Feature[]> = {};
+    for (const f of features) {
+      if (!byStatus[f.status]) byStatus[f.status] = [];
+      byStatus[f.status].push(f);
+    }
+
+    function getFeatureQuarter(f: Feature): number | null {
+      if (!f.completionDate) return null;
+      for (let q = 1; q <= 4; q++) {
+        if (f.completionDate.includes(`Q${q}`)) return q;
+      }
+      const parsed = parseDate(f.completionDate);
+      return parsed ? getQuarter(parsed) : null;
+    }
+
+    return {
+      features,
+      featuresByPriority: byPriority,
+      featuresByStatus: byStatus,
+      q1Features: features.filter(f => getFeatureQuarter(f) === 1),
+      q2Features: features.filter(f => getFeatureQuarter(f) === 2),
+      q3Features: features.filter(f => getFeatureQuarter(f) === 3),
+      q4Features: features.filter(f => getFeatureQuarter(f) === 4),
+    };
+  }
+
+  private buildBlockerDataFromScan(scan: ScanResult): BlockerData {
+    const allBlockers = scan.blockers;
+
+    const highPriority = allBlockers.filter(b =>
+      ['높음', 'High', '高', 'high'].includes(b.priority)
+    );
+    const mediumPriority = allBlockers.filter(b =>
+      ['중간', 'Medium', '中', 'medium'].includes(b.priority)
+    );
+    const lowPriority = allBlockers.filter(b =>
+      ['낮음', 'Low', '低', 'low'].includes(b.priority)
+    );
+
+    const byOwner: Record<string, typeof allBlockers> = {};
+    for (const b of allBlockers) {
+      const owner = b.owner || 'Unassigned';
+      if (!byOwner[owner]) byOwner[owner] = [];
+      byOwner[owner].push(b);
+    }
+
+    return { allBlockers, highPriority, mediumPriority, lowPriority, byOwner };
+  }
+
+  private buildQuarterlyFromScan(scan: ScanResult): QuarterlyData {
+    const currentQuarter = Math.floor(new Date().getMonth() / 3) + 1;
+    const allTasks = scan.tasks;
+
+    const p0Tasks = allTasks.filter(t => t.priority === 'P0');
+    const p1Tasks = allTasks.filter(t => t.priority === 'P1');
+    const p2Tasks = allTasks.filter(t => t.priority === 'P2');
+
+    const completed = allTasks.filter(t => t.status);
+    const pending = allTasks.filter(t => !t.status);
+    const total = allTasks.length;
+    const completionRate = total > 0 ? (completed.length / total) * 100 : 0;
+
+    const p0Completed = p0Tasks.filter(t => t.status).length;
+    const p1Completed = p1Tasks.filter(t => t.status).length;
+    const p2Completed = p2Tasks.filter(t => t.status).length;
+
+    return {
+      quarter: currentQuarter,
+      p0Tasks,
+      p1Tasks,
+      p2Tasks,
+      completedTasks: completed,
+      pendingTasks: pending,
+      totalTasks: total,
+      completionRate,
+      p0Total: p0Tasks.length,
+      p0Completed,
+      p0InProgress: 0,
+      p0Pending: p0Tasks.length - p0Completed,
+      p1Total: p1Tasks.length,
+      p1Completed,
+      p1InProgress: 0,
+      p1Pending: p1Tasks.length - p1Completed,
+      p2Total: p2Tasks.length,
+      p2Completed,
+      p2InProgress: 0,
+      p2Pending: p2Tasks.length - p2Completed,
+    };
   }
 }

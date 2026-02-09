@@ -411,6 +411,8 @@ export interface OutputConfig {
 // ============================================
 // MAIN PLUGIN CONFIG
 // ============================================
+export type ScanMode = 'folder' | 'files';
+
 export interface PluginConfig {
   version: string;
   locale: LocaleCode;
@@ -421,6 +423,8 @@ export interface PluginConfig {
   sources: SourceMappings;
   output?: OutputConfig;
   advanced: AdvancedSettings;
+  scanMode?: ScanMode;
+  scanFolders?: string[];
 }
 
 // ============================================

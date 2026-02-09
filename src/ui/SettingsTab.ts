@@ -3,10 +3,11 @@
  * v2.0 - Enhanced with language selector and ConfigManager integration
  */
 
-import { App, PluginSettingTab, Setting, Notice } from 'obsidian';
+import { App, PluginSettingTab, Setting, Notice, TFolder } from 'obsidian';
 import type ExcelAutomationPlugin from '../main';
-import { LocaleCode } from '../types/config';
+import { LocaleCode, ScanMode } from '../types/config';
 import { getPresetDisplayNames, PresetName } from '../config/presets';
+import { FolderSuggestModal } from './SuggestModals';
 
 export class ExcelAutomationSettingsTab extends PluginSettingTab {
   plugin: ExcelAutomationPlugin;
@@ -82,6 +83,64 @@ export class ExcelAutomationSettingsTab extends PluginSettingTab {
           new Notice('Minimal preset applied');
           this.display();
         }));
+
+    // ===== Data Source Section =====
+    containerEl.createEl('h3', { text: 'Data Source' });
+
+    const currentScanMode = configManager?.getScanMode() || 'folder';
+    const currentScanFolders = configManager?.getScanFolders() || [];
+
+    new Setting(containerEl)
+      .setName('Scan Mode')
+      .setDesc('Folder Scan: auto-discover tasks from folders. File Mapping: specify individual files.')
+      .addDropdown(dropdown => dropdown
+        .addOption('folder', 'Folder Scan (Recommended)')
+        .addOption('files', 'File Mapping (Advanced)')
+        .setValue(currentScanMode)
+        .onChange(async (value) => {
+          await configManager?.updateScanConfig(value as ScanMode, currentScanFolders);
+          this.display();
+        }));
+
+    if (currentScanMode === 'folder') {
+      // Scan folders list
+      const folderListContainer = containerEl.createDiv('scan-folders-list');
+
+      if (currentScanFolders.length === 0) {
+        folderListContainer.createEl('p', {
+          text: 'No scan folders configured. Add folders to scan for tasks, features, and blockers.',
+          cls: 'setting-item-description',
+        });
+      }
+
+      for (let i = 0; i < currentScanFolders.length; i++) {
+        new Setting(folderListContainer)
+          .setName(currentScanFolders[i])
+          .addButton(button => button
+            .setButtonText('Remove')
+            .setWarning()
+            .onClick(async () => {
+              const updated = [...currentScanFolders];
+              updated.splice(i, 1);
+              await configManager?.updateScanConfig('folder', updated);
+              this.display();
+            }));
+      }
+
+      new Setting(containerEl)
+        .setName('Add Scan Folder')
+        .setDesc('Add a folder to scan for markdown content')
+        .addButton(button => button
+          .setButtonText('Browse')
+          .setCta()
+          .onClick(() => {
+            new FolderSuggestModal(this.app, async (folder: TFolder) => {
+              const updated = [...currentScanFolders, folder.path];
+              await configManager?.updateScanConfig('folder', updated);
+              this.display();
+            }).open();
+          }));
+    }
 
     // ===== Paths Section =====
     containerEl.createEl('h3', { text: 'Paths' });
