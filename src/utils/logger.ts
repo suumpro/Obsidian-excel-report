@@ -29,6 +29,10 @@ export class Logger {
     this.level = level;
   }
 
+  isDebugEnabled(): boolean {
+    return LOG_LEVELS['DEBUG'] >= LOG_LEVELS[this.level];
+  }
+
   private shouldLog(level: LogLevel): boolean {
     return LOG_LEVELS[level] >= LOG_LEVELS[this.level];
   }

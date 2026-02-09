@@ -21,9 +21,12 @@ const presets: Record<PresetName, PluginConfig> = {
   'universal-default': universalDefault as unknown as PluginConfig,
 };
 
+// Cache serialized JSON strings for presets (presets are immutable)
+const presetJsonCache = new Map<PresetName, string>();
+
 /**
  * Get a preset configuration by name
- * Returns a deep copy to prevent mutation
+ * Returns a deep copy to prevent mutation (cached serialization)
  */
 export function getPreset(name: PresetName | LocaleCode | string): PluginConfig {
   // Map locale codes to preset names
@@ -40,11 +43,14 @@ export function getPreset(name: PresetName | LocaleCode | string): PluginConfig 
     'universal-default': 'universal-default',
   };
 
-  const presetName = localeToPreset[name] || 'universal-default';
-  const preset = presets[presetName as PresetName];
+  const presetName = (localeToPreset[name] || 'universal-default') as PresetName;
+  let json = presetJsonCache.get(presetName);
+  if (!json) {
+    json = JSON.stringify(presets[presetName]);
+    presetJsonCache.set(presetName, json);
+  }
 
-  // Return a deep copy to prevent mutation
-  return JSON.parse(JSON.stringify(preset));
+  return JSON.parse(json);
 }
 
 /**

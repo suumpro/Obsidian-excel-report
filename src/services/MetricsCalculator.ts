@@ -32,42 +32,50 @@ export class MetricsCalculator {
   static calculateDashboardMetrics(dashboard: DashboardData): Metrics {
     const metrics = emptyMetrics();
 
-    // Overall task metrics
-    const taskMetrics = this.calculateTaskMetrics(dashboard.allTasks);
-    Object.assign(metrics, taskMetrics);
+    // Single-pass: count all metrics from allTasks
+    let totalCompleted = 0, totalPending = 0;
+    let p0Completed = 0, p1Completed = 0, p2Completed = 0;
+    let overdueTasks = 0, thisWeekTasks = 0;
 
-    // P0 metrics
-    const p0Completed = dashboard.p0Tasks.filter(t => t.status).length;
+    for (const t of dashboard.allTasks) {
+      if (t.status) {
+        totalCompleted++;
+        if (t.priority === 'P0') p0Completed++;
+        else if (t.priority === 'P1') p1Completed++;
+        else if (t.priority === 'P2') p2Completed++;
+      } else {
+        totalPending++;
+        if (isOverdue(t.dueDate)) overdueTasks++;
+      }
+      if (isThisWeek(t.dueDate)) thisWeekTasks++;
+    }
+
+    const total = dashboard.allTasks.length;
+    metrics.totalTasks = total;
+    metrics.completedTasks = totalCompleted;
+    metrics.pendingTasks = totalPending;
+    metrics.completionRate = total > 0 ? (totalCompleted / total) * 100 : 0;
+
     metrics.p0Total = dashboard.p0Tasks.length;
     metrics.p0Completed = p0Completed;
     metrics.p0CompletionRate = metrics.p0Total > 0
       ? (p0Completed / metrics.p0Total) * 100
       : 0;
 
-    // P1 metrics
-    const p1Completed = dashboard.p1Tasks.filter(t => t.status).length;
     metrics.p1Total = dashboard.p1Tasks.length;
     metrics.p1Completed = p1Completed;
     metrics.p1CompletionRate = metrics.p1Total > 0
       ? (p1Completed / metrics.p1Total) * 100
       : 0;
 
-    // P2 metrics
-    const p2Completed = dashboard.p2Tasks.filter(t => t.status).length;
     metrics.p2Total = dashboard.p2Tasks.length;
     metrics.p2Completed = p2Completed;
     metrics.p2CompletionRate = metrics.p2Total > 0
       ? (p2Completed / metrics.p2Total) * 100
       : 0;
 
-    // Overdue and this week metrics
-    metrics.overdueTasks = dashboard.allTasks.filter(t =>
-      !t.status && isOverdue(t.dueDate)
-    ).length;
-
-    metrics.thisWeekTasks = dashboard.allTasks.filter(t =>
-      isThisWeek(t.dueDate)
-    ).length;
+    metrics.overdueTasks = overdueTasks;
+    metrics.thisWeekTasks = thisWeekTasks;
 
     return metrics;
   }
@@ -79,17 +87,12 @@ export class MetricsCalculator {
     const features = roadmap.features;
     const total = features.length;
 
-    const inProgress = features.filter(f =>
-      isInProgress(f.status)
-    ).length;
-
-    const completed = features.filter(f =>
-      isCompleted(f.status)
-    ).length;
-
-    const pending = features.filter(f =>
-      isPending(f.status)
-    ).length;
+    let inProgress = 0, completed = 0, pending = 0;
+    for (const f of features) {
+      if (isCompleted(f.status)) completed++;
+      else if (isInProgress(f.status)) inProgress++;
+      else if (isPending(f.status)) pending++;
+    }
 
     return {
       totalFeatures: total,

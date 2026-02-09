@@ -53,7 +53,7 @@ export class CacheManager {
   constructor(options?: CacheOptions) {
     this.maxEntries = options?.maxEntries ?? 50;
     this.maxAge = options?.maxAge ?? 5 * 60 * 1000; // 5 minutes default
-    logger.debug(`CacheManager initialized: maxEntries=${this.maxEntries}, maxAge=${this.maxAge}ms`);
+    if (logger.isDebugEnabled()) logger.debug(`CacheManager initialized: maxEntries=${this.maxEntries}, maxAge=${this.maxAge}ms`);
   }
 
   /**
@@ -67,7 +67,7 @@ export class CacheManager {
 
     if (!entry) {
       this.totalMisses++;
-      logger.debug(`Cache miss (not found): ${key}`);
+      if (logger.isDebugEnabled()) logger.debug(`Cache miss (not found): ${key}`);
       return null;
     }
 
@@ -75,7 +75,7 @@ export class CacheManager {
     if (entry.mtime !== currentMtime) {
       this.invalidate(key);
       this.totalMisses++;
-      logger.debug(`Cache miss (mtime changed): ${key}`);
+      if (logger.isDebugEnabled()) logger.debug(`Cache miss (mtime changed): ${key}`);
       return null;
     }
 
@@ -83,14 +83,16 @@ export class CacheManager {
     if (Date.now() - entry.cachedAt > this.maxAge) {
       this.invalidate(key);
       this.totalMisses++;
-      logger.debug(`Cache miss (expired): ${key}`);
+      if (logger.isDebugEnabled()) logger.debug(`Cache miss (expired): ${key}`);
       return null;
     }
 
-    // Cache hit
+    // Cache hit — move to end for LRU (Map preserves insertion order)
+    this.cache.delete(key);
     entry.hits++;
+    this.cache.set(key, entry);
     this.totalHits++;
-    logger.debug(`Cache hit: ${key} (hits: ${entry.hits})`);
+    if (logger.isDebugEnabled()) logger.debug(`Cache hit: ${key} (hits: ${entry.hits})`);
     return entry.data as T;
   }
 
@@ -111,7 +113,7 @@ export class CacheManager {
       hits: 0,
     });
 
-    logger.debug(`Cache set: ${key} (mtime: ${mtime})`);
+    if (logger.isDebugEnabled()) logger.debug(`Cache set: ${key} (mtime: ${mtime})`);
   }
 
   /**
@@ -141,7 +143,7 @@ export class CacheManager {
    */
   invalidate(key: string): void {
     if (this.cache.delete(key)) {
-      logger.debug(`Cache invalidated: ${key}`);
+      if (logger.isDebugEnabled()) logger.debug(`Cache invalidated: ${key}`);
     }
   }
 
@@ -158,7 +160,7 @@ export class CacheManager {
       }
     }
     if (count > 0) {
-      logger.debug(`Cache invalidated ${count} entries matching: ${pattern}`);
+      if (logger.isDebugEnabled()) logger.debug(`Cache invalidated ${count} entries matching: ${pattern}`);
     }
   }
 
@@ -170,7 +172,7 @@ export class CacheManager {
     this.cache.clear();
     this.totalHits = 0;
     this.totalMisses = 0;
-    logger.debug(`Cache cleared: ${size} entries removed`);
+    if (logger.isDebugEnabled()) logger.debug(`Cache cleared: ${size} entries removed`);
   }
 
   /**
@@ -188,24 +190,16 @@ export class CacheManager {
   }
 
   /**
-   * Evict oldest entry if at capacity (LRU)
+   * Evict least-recently-used entry if at capacity
+   * O(1) using Map insertion order (oldest first)
    */
   private evictIfNeeded(): void {
     if (this.cache.size < this.maxEntries) return;
 
-    let oldestKey: string | null = null;
-    let oldestTime = Infinity;
-
-    for (const [key, entry] of this.cache.entries()) {
-      if (entry.cachedAt < oldestTime) {
-        oldestTime = entry.cachedAt;
-        oldestKey = key;
-      }
-    }
-
-    if (oldestKey) {
+    const oldestKey = this.cache.keys().next().value;
+    if (oldestKey !== undefined) {
       this.cache.delete(oldestKey);
-      logger.debug(`Cache evicted (LRU): ${oldestKey}`);
+      if (logger.isDebugEnabled()) logger.debug(`Cache evicted (LRU): ${oldestKey}`);
     }
   }
 }

@@ -45,11 +45,15 @@ export class VaultScanner {
     const allFeatures: FeatureWithSource[] = [];
     const allBlockers: BlockerWithSource[] = [];
 
-    for (const file of files) {
-      const fileResult = await this.scanFile(file);
-      allTasks.push(...fileResult.tasks);
-      allFeatures.push(...fileResult.features);
-      allBlockers.push(...fileResult.blockers);
+    const settled = await Promise.allSettled(files.map(file => this.scanFile(file)));
+    for (const result of settled) {
+      if (result.status === 'fulfilled') {
+        allTasks.push(...result.value.tasks);
+        allFeatures.push(...result.value.features);
+        allBlockers.push(...result.value.blockers);
+      } else {
+        logger.warn(`[VaultScanner] Failed to scan file: ${result.reason}`);
+      }
     }
 
     const duration = Date.now() - start;
@@ -131,8 +135,8 @@ export class VaultScanner {
         ...f,
         sourceFile,
       }));
-    } catch {
-      // File may not contain feature tables - that's fine
+    } catch (e) {
+      if (logger.isDebugEnabled()) logger.debug(`[VaultScanner] No features in ${file.path}: ${e}`);
     }
 
     // Extract blockers
@@ -143,8 +147,8 @@ export class VaultScanner {
         ...b,
         sourceFile,
       }));
-    } catch {
-      // File may not contain blocker sections - that's fine
+    } catch (e) {
+      if (logger.isDebugEnabled()) logger.debug(`[VaultScanner] No blockers in ${file.path}: ${e}`);
     }
 
     const result: FileScanResult = { tasks, features, blockers };

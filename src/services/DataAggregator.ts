@@ -31,7 +31,7 @@ import {
 import type { ScanResult } from '../types/scan';
 import { Feature, Priority } from '../types/models';
 import { logger } from '../utils/logger';
-import { parseDate, getQuarter } from '../utils/dateUtils';
+import { parseDate, getQuarter, getWeekNumber } from '../utils/dateUtils';
 import { isCompleted } from '../utils/statusUtils';
 
 export class DataAggregator {
@@ -134,9 +134,14 @@ export class DataAggregator {
       const currentCycle = this.parser.extractCurrentCycle(body) || 'C1';
 
       const allTasks = this.parser.extractTasks(body);
-      const p0Tasks = allTasks.filter(t => t.priority === 'P0');
-      const p1Tasks = allTasks.filter(t => t.priority === 'P1');
-      const p2Tasks = allTasks.filter(t => t.priority === 'P2');
+      const p0Tasks: typeof allTasks = [];
+      const p1Tasks: typeof allTasks = [];
+      const p2Tasks: typeof allTasks = [];
+      for (const t of allTasks) {
+        if (t.priority === 'P0') p0Tasks.push(t);
+        else if (t.priority === 'P1') p1Tasks.push(t);
+        else if (t.priority === 'P2') p2Tasks.push(t);
+      }
 
       logger.debug(`Loaded dashboard: ${allTasks.length} tasks (P0: ${p0Tasks.length}, P1: ${p1Tasks.length}, P2: ${p2Tasks.length})`);
 
@@ -216,19 +221,22 @@ export class DataAggregator {
       const { content: body } = this.parser.parseFile(content);
 
       const allTasks = this.parser.extractTasks(body);
-      const p0Tasks = allTasks.filter(t => t.priority === 'P0');
-      const p1Tasks = allTasks.filter(t => t.priority === 'P1');
-      const p2Tasks = allTasks.filter(t => t.priority === 'P2');
-
-      const completed = allTasks.filter(t => t.status);
-      const pending = allTasks.filter(t => !t.status);
+      const p0Tasks: typeof allTasks = [];
+      const p1Tasks: typeof allTasks = [];
+      const p2Tasks: typeof allTasks = [];
+      const completed: typeof allTasks = [];
+      const pending: typeof allTasks = [];
+      let p0Completed = 0;
+      let p1Completed = 0;
+      let p2Completed = 0;
+      for (const t of allTasks) {
+        if (t.priority === 'P0') { p0Tasks.push(t); if (t.status) p0Completed++; }
+        else if (t.priority === 'P1') { p1Tasks.push(t); if (t.status) p1Completed++; }
+        else if (t.priority === 'P2') { p2Tasks.push(t); if (t.status) p2Completed++; }
+        if (t.status) completed.push(t); else pending.push(t);
+      }
       const total = allTasks.length;
       const completionRate = total > 0 ? (completed.length / total) * 100 : 0;
-
-      // Calculate per-priority breakdowns
-      const p0Completed = p0Tasks.filter(t => t.status).length;
-      const p1Completed = p1Tasks.filter(t => t.status).length;
-      const p2Completed = p2Tasks.filter(t => t.status).length;
 
       logger.debug(`Loaded Q${quarter}: ${total} tasks, ${completionRate.toFixed(1)}% complete`);
 
@@ -295,37 +303,7 @@ export class DataAggregator {
       const { content: body } = this.parser.parseFile(content);
 
       const features = this.parser.parseFeatures(body);
-
-      // Group by priority
-      const byPriority: Record<Priority, Feature[]> = {
-        P0: features.filter(f => f.priority === 'P0'),
-        P1: features.filter(f => f.priority === 'P1'),
-        P2: features.filter(f => f.priority === 'P2'),
-      };
-
-      // Group by status
-      const byStatus: Record<string, Feature[]> = {};
-      for (const f of features) {
-        const status = f.status;
-        if (!byStatus[status]) byStatus[status] = [];
-        byStatus[status].push(f);
-      }
-
-      // Group by quarter (based on completion date)
-      // Supports "Q1"-"Q4" markers and any parseable date string (locale-agnostic)
-      function getFeatureQuarter(f: Feature): number | null {
-        if (!f.completionDate) return null;
-        for (let q = 1; q <= 4; q++) {
-          if (f.completionDate.includes(`Q${q}`)) return q;
-        }
-        const parsed = parseDate(f.completionDate);
-        return parsed ? getQuarter(parsed) : null;
-      }
-
-      const q1Features = features.filter(f => getFeatureQuarter(f) === 1);
-      const q2Features = features.filter(f => getFeatureQuarter(f) === 2);
-      const q3Features = features.filter(f => getFeatureQuarter(f) === 3);
-      const q4Features = features.filter(f => getFeatureQuarter(f) === 4);
+      const { byPriority, byStatus, byQuarter } = this.classifyFeatures(features);
 
       logger.debug(`Loaded roadmap: ${features.length} features`);
 
@@ -333,10 +311,10 @@ export class DataAggregator {
         features,
         featuresByPriority: byPriority,
         featuresByStatus: byStatus,
-        q1Features,
-        q2Features,
-        q3Features,
-        q4Features,
+        q1Features: byQuarter[1],
+        q2Features: byQuarter[2],
+        q3Features: byQuarter[3],
+        q4Features: byQuarter[4],
       };
 
       // Cache the result
@@ -460,8 +438,12 @@ export class DataAggregator {
       const { metadata, content: body } = this.parser.parseFile(content);
 
       const allTasks = this.parser.extractTasks(body);
-      const p0Tasks = allTasks.filter(t => t.priority === 'P0');
-      const p1Tasks = allTasks.filter(t => t.priority === 'P1');
+      const p0Tasks: typeof allTasks = [];
+      const p1Tasks: typeof allTasks = [];
+      for (const t of allTasks) {
+        if (t.priority === 'P0') p0Tasks.push(t);
+        else if (t.priority === 'P1') p1Tasks.push(t);
+      }
       const weeklyBreakdowns = this.parser.parseWeeklyBreakdowns(body);
       const milestones = this.parser.parseMilestones(body);
 
@@ -692,14 +674,17 @@ export class DataAggregator {
 
   private buildDashboardFromScan(scan: ScanResult): DashboardData {
     const allTasks = scan.tasks;
-    const p0Tasks = allTasks.filter(t => t.priority === 'P0');
-    const p1Tasks = allTasks.filter(t => t.priority === 'P1');
-    const p2Tasks = allTasks.filter(t => t.priority === 'P2');
+    const p0Tasks: typeof allTasks = [];
+    const p1Tasks: typeof allTasks = [];
+    const p2Tasks: typeof allTasks = [];
+    for (const t of allTasks) {
+      if (t.priority === 'P0') p0Tasks.push(t);
+      else if (t.priority === 'P1') p1Tasks.push(t);
+      else if (t.priority === 'P2') p2Tasks.push(t);
+    }
 
     const now = new Date();
-    const weekNumber = Math.ceil(
-      ((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / 86400000 + 1) / 7
-    );
+    const weekNumber = getWeekNumber(now);
 
     return {
       currentWeek: weekNumber,
@@ -718,36 +703,16 @@ export class DataAggregator {
 
   private buildRoadmapFromScan(scan: ScanResult): RoadmapData {
     const features = scan.features;
-
-    const byPriority: Record<Priority, Feature[]> = {
-      P0: features.filter(f => f.priority === 'P0'),
-      P1: features.filter(f => f.priority === 'P1'),
-      P2: features.filter(f => f.priority === 'P2'),
-    };
-
-    const byStatus: Record<string, Feature[]> = {};
-    for (const f of features) {
-      if (!byStatus[f.status]) byStatus[f.status] = [];
-      byStatus[f.status].push(f);
-    }
-
-    function getFeatureQuarter(f: Feature): number | null {
-      if (!f.completionDate) return null;
-      for (let q = 1; q <= 4; q++) {
-        if (f.completionDate.includes(`Q${q}`)) return q;
-      }
-      const parsed = parseDate(f.completionDate);
-      return parsed ? getQuarter(parsed) : null;
-    }
+    const { byPriority, byStatus, byQuarter } = this.classifyFeatures(features);
 
     return {
       features,
       featuresByPriority: byPriority,
       featuresByStatus: byStatus,
-      q1Features: features.filter(f => getFeatureQuarter(f) === 1),
-      q2Features: features.filter(f => getFeatureQuarter(f) === 2),
-      q3Features: features.filter(f => getFeatureQuarter(f) === 3),
-      q4Features: features.filter(f => getFeatureQuarter(f) === 4),
+      q1Features: byQuarter[1],
+      q2Features: byQuarter[2],
+      q3Features: byQuarter[3],
+      q4Features: byQuarter[4],
     };
   }
 
@@ -778,18 +743,22 @@ export class DataAggregator {
     const currentQuarter = Math.floor(new Date().getMonth() / 3) + 1;
     const allTasks = scan.tasks;
 
-    const p0Tasks = allTasks.filter(t => t.priority === 'P0');
-    const p1Tasks = allTasks.filter(t => t.priority === 'P1');
-    const p2Tasks = allTasks.filter(t => t.priority === 'P2');
-
-    const completed = allTasks.filter(t => t.status);
-    const pending = allTasks.filter(t => !t.status);
+    const p0Tasks: typeof allTasks = [];
+    const p1Tasks: typeof allTasks = [];
+    const p2Tasks: typeof allTasks = [];
+    const completed: typeof allTasks = [];
+    const pending: typeof allTasks = [];
+    let p0Completed = 0;
+    let p1Completed = 0;
+    let p2Completed = 0;
+    for (const t of allTasks) {
+      if (t.priority === 'P0') { p0Tasks.push(t); if (t.status) p0Completed++; }
+      else if (t.priority === 'P1') { p1Tasks.push(t); if (t.status) p1Completed++; }
+      else if (t.priority === 'P2') { p2Tasks.push(t); if (t.status) p2Completed++; }
+      if (t.status) completed.push(t); else pending.push(t);
+    }
     const total = allTasks.length;
     const completionRate = total > 0 ? (completed.length / total) * 100 : 0;
-
-    const p0Completed = p0Tasks.filter(t => t.status).length;
-    const p1Completed = p1Tasks.filter(t => t.status).length;
-    const p2Completed = p2Tasks.filter(t => t.status).length;
 
     return {
       quarter: currentQuarter,
@@ -813,5 +782,42 @@ export class DataAggregator {
       p2InProgress: 0,
       p2Pending: p2Tasks.length - p2Completed,
     };
+  }
+
+  /**
+   * Get the quarter number for a feature based on its completion date
+   */
+  private getFeatureQuarter(f: Feature): number | null {
+    if (!f.completionDate) return null;
+    for (let q = 1; q <= 4; q++) {
+      if (f.completionDate.includes(`Q${q}`)) return q;
+    }
+    const parsed = parseDate(f.completionDate);
+    return parsed ? getQuarter(parsed) : null;
+  }
+
+  /**
+   * Classify features by priority, status, and quarter in a single pass
+   */
+  private classifyFeatures(features: Feature[]): {
+    byPriority: Record<Priority, Feature[]>;
+    byStatus: Record<string, Feature[]>;
+    byQuarter: Record<number, Feature[]>;
+  } {
+    const byPriority: Record<Priority, Feature[]> = { P0: [], P1: [], P2: [] };
+    const byStatus: Record<string, Feature[]> = {};
+    const byQuarter: Record<number, Feature[]> = { 1: [], 2: [], 3: [], 4: [] };
+
+    for (const f of features) {
+      if (byPriority[f.priority as Priority]) {
+        byPriority[f.priority as Priority].push(f);
+      }
+      if (!byStatus[f.status]) byStatus[f.status] = [];
+      byStatus[f.status].push(f);
+      const q = this.getFeatureQuarter(f);
+      if (q && byQuarter[q]) byQuarter[q].push(f);
+    }
+
+    return { byPriority, byStatus, byQuarter };
   }
 }

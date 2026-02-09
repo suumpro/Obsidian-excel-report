@@ -54,6 +54,11 @@ export default class ExcelAutomationPlugin extends Plugin {
       logger.setLevel('DEBUG');
     }
 
+    // Invalidate cached data when config changes
+    this.configManager.subscribe(() => {
+      this.dataAggregator?.clearCache();
+    });
+
     // Add custom icon
     addIcon('excel-report', EXCEL_ICON);
 
@@ -188,6 +193,8 @@ export default class ExcelAutomationPlugin extends Plugin {
   }
 
   onunload() {
+    this.dataAggregator = null;
+    this.pathValidator = null;
     logger.info('Unloading Excel Automation Plugin');
   }
 

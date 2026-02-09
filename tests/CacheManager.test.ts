@@ -11,6 +11,7 @@ jest.mock('../src/utils/logger', () => ({
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
+    isDebugEnabled: jest.fn().mockReturnValue(false),
   },
 }));
 
