@@ -21,6 +21,11 @@ __pycache__/
 *.egg-info/
 *.pyc
 
+# Workflow tool artifacts
+docs/.pdca-snapshots/
+docs/.pdca-status.json
+docs/.bkit-memory.json
+
 # IDE
 .idea/
 .vscode/
