@@ -5,7 +5,7 @@
 
 import ExcelJS from 'exceljs';
 import { StylingOptions } from '../types/settings';
-import { isCompleted, isInProgress, isPending } from '../utils/statusUtils';
+import { isCompleted, isInProgress, isPending, isHighPriority, isMediumPriority } from '../utils/statusUtils';
 
 /**
  * Manages cell styling for Excel generation
@@ -151,11 +151,9 @@ export class StyleManager {
    * Apply priority-based style to a cell
    */
   applyPriorityStyle(cell: ExcelJS.Cell, priority: string): void {
-    const upperPriority = priority.toUpperCase();
-
-    if (upperPriority.includes('P0') || upperPriority.includes('높음') || upperPriority.includes('HIGH')) {
+    if (isHighPriority(priority)) {
       cell.fill = this.p0Fill;
-    } else if (upperPriority.includes('P1') || upperPriority.includes('중간') || upperPriority.includes('MEDIUM')) {
+    } else if (isMediumPriority(priority)) {
       cell.fill = this.p1Fill;
     } else {
       cell.fill = this.p2Fill;

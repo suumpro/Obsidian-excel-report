@@ -6,8 +6,11 @@ import { Feature, Blocker, Priority, FeatureStatus, BlockerPriority, BlockerStat
 import { ParsingConfig } from '../../types/config';
 import { matchesAny, createSafeRegex } from '../../utils/configUtils';
 import { MetadataParser } from './MetadataParser';
+import { RegexCache } from '../../utils/RegexCache';
 
 export class FeatureBlockerParser {
+  private regexCache = new RegexCache();
+
   constructor(
     private parsingRules: ParsingConfig,
     private metadataParser: MetadataParser
@@ -143,8 +146,9 @@ export class FeatureBlockerParser {
    * Extract blocker section by ID
    */
   private extractBlockerSection(content: string, blockerId: string): string {
-    const pattern = new RegExp(`###\\s+${blockerId}[\\s\\S]*?(?=###|$)`, 'i');
-    const match = content.match(pattern);
+    const regex = this.regexCache.get(`###\\s+${blockerId}[\\s\\S]*?(?=###|$)`, 'i');
+    if (!regex) return '';
+    const match = content.match(regex);
     return match ? match[0] : '';
   }
 

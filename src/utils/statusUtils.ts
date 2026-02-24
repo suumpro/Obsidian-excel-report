@@ -39,3 +39,20 @@ export function isBlocker(status: string): boolean {
   return matchesAny(status, BLOCKER_PATTERNS);
 }
 
+// Priority matching utilities
+const HIGH_PRIORITY_PATTERNS = ['P0', '높음', 'High', '高', 'Critical'];
+const MEDIUM_PRIORITY_PATTERNS = ['P1', '중간', 'Medium', '中', 'Normal'];
+const LOW_PRIORITY_PATTERNS = ['P2', '낮음', 'Low', '低', 'Minor'];
+
+export function isHighPriority(priority: string): boolean {
+  return matchesAny(priority, HIGH_PRIORITY_PATTERNS);
+}
+
+export function isMediumPriority(priority: string): boolean {
+  return matchesAny(priority, MEDIUM_PRIORITY_PATTERNS);
+}
+
+export function isLowPriority(priority: string): boolean {
+  return matchesAny(priority, LOW_PRIORITY_PATTERNS);
+}
+

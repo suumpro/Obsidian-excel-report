@@ -3,8 +3,10 @@
  */
 
 import { escapeRegex } from './types';
+import { RegexCache } from '../../utils/RegexCache';
 
 export class MetadataParser {
+  private regexCache = new RegexCache();
   /**
    * Parse frontmatter and content from markdown
    */
@@ -121,14 +123,17 @@ export class MetadataParser {
    * Extract metadata value from content
    */
   extractMetadataValue(content: string, key: string): string | null {
-    const patterns = [
-      new RegExp(`\\*\\*${key}\\*\\*:\\s*(.+)`, 'i'),
-      new RegExp(`${key}:\\s*(.+)`, 'i'),
-      new RegExp(`\\|\\s*\\*\\*${key}\\*\\*\\s*\\|\\s*(.+?)\\s*\\|`, 'i'),
+    const escapedKey = escapeRegex(key);
+    const patternStrings = [
+      `\\*\\*${escapedKey}\\*\\*:\\s*(.+)`,
+      `${escapedKey}:\\s*(.+)`,
+      `\\|\\s*\\*\\*${escapedKey}\\*\\*\\s*\\|\\s*(.+?)\\s*\\|`,
     ];
 
-    for (const pattern of patterns) {
-      const match = content.match(pattern);
+    for (const patternStr of patternStrings) {
+      const regex = this.regexCache.get(patternStr, 'i');
+      if (!regex) continue;
+      const match = content.match(regex);
       if (match) return match[1].trim();
     }
 

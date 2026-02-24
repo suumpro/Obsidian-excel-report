@@ -32,7 +32,7 @@ import type { ScanResult } from '../types/scan';
 import { Feature, Priority } from '../types/models';
 import { logger } from '../utils/logger';
 import { parseDate, getQuarter, getWeekNumber } from '../utils/dateUtils';
-import { isCompleted } from '../utils/statusUtils';
+import { isCompleted, isHighPriority, isMediumPriority, isLowPriority } from '../utils/statusUtils';
 
 export class DataAggregator {
   private vault: VaultService;
@@ -376,15 +376,9 @@ export class DataAggregator {
       const blockers = this.parser.parseBlockers(body);
 
       // Group by priority
-      const highPriority = blockers.filter(b =>
-        ['높음', 'High', '高', 'high'].includes(b.priority)
-      );
-      const mediumPriority = blockers.filter(b =>
-        ['중간', 'Medium', '中', 'medium'].includes(b.priority)
-      );
-      const lowPriority = blockers.filter(b =>
-        ['낮음', 'Low', '低', 'low'].includes(b.priority)
-      );
+      const highPriority = blockers.filter(b => isHighPriority(b.priority));
+      const mediumPriority = blockers.filter(b => isMediumPriority(b.priority));
+      const lowPriority = blockers.filter(b => isLowPriority(b.priority));
 
       // Group by owner
       const byOwner: Record<string, typeof blockers> = {};
@@ -739,15 +733,9 @@ export class DataAggregator {
   private buildBlockerDataFromScan(scan: ScanResult): BlockerData {
     const allBlockers = scan.blockers;
 
-    const highPriority = allBlockers.filter(b =>
-      ['높음', 'High', '高', 'high'].includes(b.priority)
-    );
-    const mediumPriority = allBlockers.filter(b =>
-      ['중간', 'Medium', '中', 'medium'].includes(b.priority)
-    );
-    const lowPriority = allBlockers.filter(b =>
-      ['낮음', 'Low', '低', 'low'].includes(b.priority)
-    );
+    const highPriority = allBlockers.filter(b => isHighPriority(b.priority));
+    const mediumPriority = allBlockers.filter(b => isMediumPriority(b.priority));
+    const lowPriority = allBlockers.filter(b => isLowPriority(b.priority));
 
     const byOwner: Record<string, typeof allBlockers> = {};
     for (const b of allBlockers) {

@@ -443,7 +443,12 @@ export class ConfigManager {
    * Save configuration to disk
    */
   private async save(): Promise<void> {
-    await this.plugin.saveData(this.config);
+    try {
+      await this.plugin.saveData(this.config);
+    } catch (e) {
+      logger.error('Failed to save configuration:', e);
+      return;
+    }
     this.notifyListeners();
   }
 

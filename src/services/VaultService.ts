@@ -112,7 +112,14 @@ export class VaultService {
       const existing = this.app.vault.getAbstractFileByPath(currentPath);
 
       if (!existing) {
-        await this.app.vault.createFolder(currentPath);
+        try {
+          await this.app.vault.createFolder(currentPath);
+        } catch {
+          // Folder may have been created concurrently; verify it exists
+          if (!this.app.vault.getAbstractFileByPath(currentPath)) {
+            throw new Error(`Failed to create folder: ${currentPath}`);
+          }
+        }
       }
     }
   }
