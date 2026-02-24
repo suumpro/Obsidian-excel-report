@@ -16,8 +16,15 @@ describe('TaskParser', () => {
   });
 
   describe('extractInlineFields', () => {
-    it('should extract dataview-style inline fields', () => {
-      // Bracket-wrapped format is excluded by regex [^\n\]]+? — use bare format
+    it('should extract dataview-style inline fields (bracket format)', () => {
+      const text = '- [ ] Task [owner:: @john] [due:: 2026-03-01]';
+      const fields = parser.extractInlineFields(text);
+
+      expect(fields['owner']).toBe('@john');
+      expect(fields['due']).toBe('2026-03-01');
+    });
+
+    it('should extract dataview-style inline fields (bare format)', () => {
       const text = 'owner:: @john due:: 2026-03-01';
       const fields = parser.extractInlineFields(text);
 

@@ -127,34 +127,51 @@ describe('FeatureBlockerParser', () => {
       expect(parser.parseBlockers('')).toEqual([]);
     });
 
-    it('should return empty when heading levels mismatch (## vs ### extractSection level 3)', () => {
-      // extractSection uses level 3, so ## headings are not found
+    it('should parse blockers from ## priority sections with ### blocker entries', () => {
       const content = `
 ## High Priority
 
 ### B001 Authentication timeout issue
 - owner: Alice
+- 목표일: 2026-03-01
+- 영향: Login flow breaks
 - Status: ⚠️ 미해결
+
+## Medium Priority
+
+### B002 Slow dashboard load
+- owner: Bob
+- target: 2026-03-15
+- Impact: User experience degraded
+- Status: 🔄 진행중
 `;
 
       const blockers = parser.parseBlockers(content);
-      // ## headings won't match extractSection(keyword, 3)
-      expect(blockers).toEqual([]);
+      expect(blockers).toHaveLength(2);
+      expect(blockers[0].id).toBe('B001');
+      expect(blockers[0].title).toBe('Authentication timeout issue');
+      expect(blockers[0].priority).toBe('높음');
+      expect(blockers[0].status).toBe('⚠️ 미해결');
+      expect(blockers[0].impact).toBe('Login flow breaks');
+
+      expect(blockers[1].id).toBe('B002');
+      expect(blockers[1].priority).toBe('중간');
+      expect(blockers[1].status).toBe('🔄 진행중');
     });
 
-    it('should return empty when ### blocker headings break the section', () => {
-      // Even with ### priority heading, ### B001 breaks extractSection at same level
+    it('should parse resolved blocker status', () => {
       const content = `
-### High Priority
+## Low Priority
 
-### B001 Auth issue
-- owner: Alice
-- Status: ⚠️ 미해결
+### B003 Minor UI glitch
+- owner: Charlie
+- Status: ✅ Resolved
 `;
 
       const blockers = parser.parseBlockers(content);
-      // ### B001 has level <= 3, so extractSection breaks before including it
-      expect(blockers).toEqual([]);
+      expect(blockers).toHaveLength(1);
+      expect(blockers[0].priority).toBe('낮음');
+      expect(blockers[0].status).toBe('✅ 해결');
     });
 
     it('should return empty for content without priority sections', () => {

@@ -443,7 +443,7 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
           t.priority || 'P2',
           t.owner || '-',
           t.dueDate ? t.dueDate.toISOString().substring(5, 10).replace('-', '/') : '-',
-          t.status ? status.completed : status.inProgress,
+          t.status === 'completed' ? status.completed : status.inProgress,
         ]);
 
         row = this.addTable(ws, taskHeaders, taskData, row, 1, { alternateColors: true });
@@ -464,7 +464,7 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
           t.priority || 'P2',
           t.owner || '-',
           t.dueDate ? t.dueDate.toISOString().substring(5, 10).replace('-', '/') : '-',
-          t.status ? status.completed : status.inProgress,
+          t.status === 'completed' ? status.completed : status.inProgress,
         ]);
 
         row = this.addTable(ws, taskHeaders, taskData, row, 1, { alternateColors: true });

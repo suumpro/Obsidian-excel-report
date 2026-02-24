@@ -52,21 +52,17 @@ export function formatDate(date: Date, format: string = 'YYYY-MM-DD'): string {
  * Get the date range (start and end) for a given week number
  */
 export function getWeekRange(weekNumber: number, year: number): { start: Date; end: Date } {
-  // Get the first day of the year
-  const firstDayOfYear = new Date(year, 0, 1);
+  // ISO 8601: Week 1 contains Jan 4
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const dayOfWeek = jan4.getUTCDay() || 7; // Mon=1..Sun=7
+  const week1Monday = new Date(jan4);
+  week1Monday.setUTCDate(jan4.getUTCDate() - (dayOfWeek - 1));
 
-  // Find the first Monday of the year (ISO week starts on Monday)
-  const dayOfWeek = firstDayOfYear.getDay();
-  const daysToFirstMonday = dayOfWeek === 0 ? 1 : (dayOfWeek === 1 ? 0 : 8 - dayOfWeek);
-
-  // Calculate the start of the requested week
-  const startOfWeek = new Date(year, 0, 1 + daysToFirstMonday + (weekNumber - 1) * 7);
-
-  // End of week is 6 days after start (Sunday)
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-  return { start: startOfWeek, end: endOfWeek };
+  const start = new Date(week1Monday);
+  start.setUTCDate(week1Monday.getUTCDate() + (weekNumber - 1) * 7);
+  const end = new Date(start);
+  end.setUTCDate(start.getUTCDate() + 6);
+  return { start, end };
 }
 
 /**

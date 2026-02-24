@@ -9,7 +9,7 @@ export class MetadataParser {
    * Parse frontmatter and content from markdown
    */
   parseFile(content: string): { metadata: Record<string, unknown>; content: string } {
-    const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+    const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
 
     if (frontmatterMatch) {
       const yamlContent = frontmatterMatch[1];
@@ -27,7 +27,8 @@ export class MetadataParser {
     const result: Record<string, unknown> = {};
     const lines = yaml.split('\n');
 
-    for (const line of lines) {
+    for (const rawLine of lines) {
+      const line = rawLine.replace(/\r$/, '');
       const match = line.match(/^(\w+):\s*(.*)$/);
       if (match) {
         const value = match[2].trim();

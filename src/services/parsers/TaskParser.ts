@@ -50,7 +50,7 @@ export class TaskParser {
    */
   extractInlineFields(text: string): Record<string, string> {
     const fields: Record<string, string> = {};
-    const pattern = this.regexCache.get('(\\w+)::\\s*([^\\n\\]]+?)(?=\\s*(?:\\[|$|\\n|\\s+\\w+::))', 'g');
+    const pattern = this.regexCache.get('\\[?(\\w+)::\\s*([^\\n]+?)\\]?(?=\\s*(?:\\[|$|\\n|\\s+\\w+::))', 'g');
 
     if (!pattern) return fields;
 
@@ -208,7 +208,8 @@ export class TaskParser {
     [...rules.priorityIndicators.p0, ...rules.priorityIndicators.p1, ...rules.priorityIndicators.p2]
       .forEach(indicator => {
         if (!indicator.startsWith('/')) {
-          cleanContent = cleanContent.replace(new RegExp(escapeRegex(indicator), 'g'), '');
+          const cachedRegex = this.regexCache.get(escapeRegex(indicator), 'g');
+          if (cachedRegex) cleanContent = cleanContent.replace(cachedRegex, '');
         }
       });
     rules.dueDatePatterns.forEach(pattern => {

@@ -4,6 +4,7 @@
 
 import {
   getWeekNumber,
+  getWeekRange,
   getQuarter,
   formatDate,
   getCurrentWeekInfo,
@@ -39,6 +40,35 @@ describe('dateUtils', () => {
       const week = getWeekNumber();
       expect(week).toBeGreaterThanOrEqual(1);
       expect(week).toBeLessThanOrEqual(53);
+    });
+  });
+
+  describe('getWeekRange', () => {
+    it('should return ISO-aligned week 1 for 2026', () => {
+      // 2026: Jan 1 is Thursday → ISO week 1 is Dec 29, 2025 - Jan 4, 2026
+      const { start, end } = getWeekRange(1, 2026);
+      expect(start.getUTCMonth()).toBe(11); // December
+      expect(start.getUTCDate()).toBe(29);
+      expect(start.getUTCFullYear()).toBe(2025);
+      expect(end.getUTCMonth()).toBe(0); // January
+      expect(end.getUTCDate()).toBe(4);
+      expect(end.getUTCFullYear()).toBe(2026);
+    });
+
+    it('should return correct range for week 8 of 2026', () => {
+      const { start, end } = getWeekRange(8, 2026);
+      // Week 8: Feb 16-22, 2026
+      expect(start.getUTCMonth()).toBe(1); // February
+      expect(start.getUTCDate()).toBe(16);
+      expect(end.getUTCDate()).toBe(22);
+    });
+
+    it('should be consistent with getWeekNumber', () => {
+      // getWeekNumber for a date inside getWeekRange should return the same week
+      const { start } = getWeekRange(10, 2026);
+      const midWeek = new Date(start);
+      midWeek.setUTCDate(start.getUTCDate() + 3); // Wednesday
+      expect(getWeekNumber(midWeek)).toBe(10);
     });
   });
 

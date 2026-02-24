@@ -82,7 +82,7 @@ export class FeatureBlockerParser {
       let sectionContent = '';
 
       for (const keyword of sectionKeywords) {
-        sectionContent = this.metadataParser.extractSection(content, keyword, 3) || '';
+        sectionContent = this.metadataParser.extractSection(content, keyword, 2) || '';
         if (sectionContent) break;
       }
 
@@ -154,11 +154,12 @@ export class FeatureBlockerParser {
   private parseBlockerStatus(content: string): BlockerStatus {
     const rules = this.parsingRules.blocker;
 
-    if (matchesAny(content, rules.resolvedIndicators)) {
-      return '✅ 해결';
-    }
+    // Check unresolved before resolved: '미해결' contains '해결'
     if (matchesAny(content, rules.unresolvedIndicators)) {
       return '⚠️ 미해결';
+    }
+    if (matchesAny(content, rules.resolvedIndicators)) {
+      return '✅ 해결';
     }
     if (matchesAny(content, rules.inProgressIndicators)) {
       return '🔄 진행중';

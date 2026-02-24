@@ -65,6 +65,16 @@ content`;
       expect(result.metadata.count).toBe(42);
       expect(result.metadata.version).toBe(1.5);
     });
+
+    it('should parse CRLF frontmatter', () => {
+      const markdown = "---\r\ntitle: Test\r\nauthor: Jane\r\n---\r\nContent here";
+
+      const result = parser.parseFile(markdown);
+
+      expect(result.metadata).toHaveProperty('title', 'Test');
+      expect(result.metadata).toHaveProperty('author', 'Jane');
+      expect(result.content).toBe('Content here');
+    });
   });
 
   describe('extractSection', () => {
