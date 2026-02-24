@@ -147,7 +147,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
     const now = new Date();
     const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     const upcomingDeadlines = dashboard.allTasks
-      .filter(t => t.dueDate && !t.status && t.dueDate <= sevenDaysFromNow && t.dueDate >= now)
+      .filter(t => t.dueDate && t.status !== 'completed' && t.dueDate <= sevenDaysFromNow && t.dueDate >= now)
       .sort((a, b) => (a.dueDate?.getTime() || 0) - (b.dueDate?.getTime() || 0))
       .slice(0, 5)
       .map(t => ({
@@ -163,7 +163,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
       const owner = task.owner || 'Unassigned';
       const current = ownerTaskMap.get(owner) || { total: 0, completed: 0 };
       current.total++;
-      if (task.status) current.completed++;
+      if (task.status === 'completed') current.completed++;
       ownerTaskMap.set(owner, current);
     }
     const teamWorkload = Array.from(ownerTaskMap.entries())
@@ -451,7 +451,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
     this.mergeCells(ws, row, 1, row, 4);
     row++;
 
-    const completedTasks = dashboard.allTasks.filter(t => t.status).slice(0, 5);
+    const completedTasks = dashboard.allTasks.filter(t => t.status === 'completed').slice(0, 5);
     if (completedTasks.length > 0) {
       for (const task of completedTasks) {
         const cell = ws.getCell(row, 1);
@@ -470,7 +470,7 @@ export class WeeklyReportGenerator extends ExcelGenerator {
     this.mergeCells(ws, row, 1, row, 4);
     row++;
 
-    const pendingTasks = dashboard.p0Tasks.filter(t => !t.status).slice(0, 5);
+    const pendingTasks = dashboard.p0Tasks.filter(t => t.status !== 'completed').slice(0, 5);
     if (pendingTasks.length > 0) {
       for (const task of pendingTasks) {
         const cell = ws.getCell(row, 1);
@@ -542,27 +542,33 @@ export class WeeklyReportGenerator extends ExcelGenerator {
     const ws = this.addSheet(sheets.taskDetails);
     const sm = this.getStyleManager();
 
-    const headers = [cols.category, cols.name, 'JIRA', cols.priority, cols.owner, cols.deadline, cols.status];
+    const headers = [cols.category, cols.name, 'JIRA', cols.priority, cols.owner, cols.date, cols.deadline, 'Est.', cols.status];
 
     // Combine P0 and P1 tasks, prefer Task Master data if available
     const sourceTasks = taskMaster && taskMaster.allTasks.length > 0
       ? taskMaster.allTasks
       : [...quarterData.p0Tasks, ...quarterData.p1Tasks];
 
+    const statusLabel = (s: string) =>
+      s === 'completed' ? status.completed :
+      s === 'in_progress' ? status.inProgress : status.pending;
+
     const data = sourceTasks.map(task => [
       task.category || task.areaTag || '-',
       task.content,
       task.jiraId || '-',
-      task.priority || 'P2',
+      task.priority || '-',
       task.owner || '-',
+      task.startDate ? formatDate(task.startDate, 'MM/DD') : '-',
       task.dueDate ? formatDate(task.dueDate, 'MM/DD') : '-',
-      task.status ? status.completed : status.inProgress,
+      task.estimatedTime || '-',
+      statusLabel(task.status),
     ]);
 
     this.addTable(ws, headers, data, 1, 1, {
       alternateColors: true,
       applyPriorityToColumn: 3,
-      applyStatusToColumn: 6,
+      applyStatusToColumn: 8,
     });
 
     // Apply styling
@@ -571,11 +577,11 @@ export class WeeklyReportGenerator extends ExcelGenerator {
       if (task?.priority) {
         sm.applyPriorityStyle(ws.getCell(rowIdx + 2, 4), task.priority);
       }
-      const statusCell = ws.getCell(rowIdx + 2, 7);
-      sm.applyStatusStyle(statusCell, task?.status ? status.completed : status.inProgress);
+      const statusCell = ws.getCell(rowIdx + 2, 9);
+      sm.applyStatusStyle(statusCell, statusLabel(task?.status));
     }
 
-    this.setSheetProperties(ws, { autoFilter: true, filterRange: 'A1:G' + (data.length + 1) });
+    this.setSheetProperties(ws, { autoFilter: true, filterRange: 'A1:I' + (data.length + 1) });
   }
 
   /**

@@ -91,80 +91,95 @@ export class ConfigManager {
   /**
    * Migrate from v1 settings format
    */
-  private async migrateFromV1(oldSettings: any): Promise<PluginConfig> {
+  private async migrateFromV1(oldSettings: Record<string, unknown>): Promise<PluginConfig> {
     logger.info('Migrating from v1 settings...');
+
+    // Helper to safely access nested v1 properties
+    const get = (obj: unknown, key: string): unknown =>
+      (obj && typeof obj === 'object') ? (obj as Record<string, unknown>)[key] : undefined;
+    const str = (val: unknown, fallback = ''): string =>
+      typeof val === 'string' ? val : fallback;
 
     // Start with korean-default preset (matches v1 behavior)
     const baseConfig = getPreset('korean-default');
 
     if (oldSettings) {
       // Migrate existing source mappings
-      if (oldSettings.sourceMappings) {
+      const sm = oldSettings.sourceMappings;
+      if (sm && typeof sm === 'object') {
         baseConfig.sources = {
           ...baseConfig.sources,
-          basePath: oldSettings.sourceMappings.basePath || '',
-          outputDir: oldSettings.sourceMappings.outputDir || '',
-          dashboard: oldSettings.sourceMappings.dashboard || '',
+          basePath: str(get(sm, 'basePath')),
+          outputDir: str(get(sm, 'outputDir')),
+          dashboard: str(get(sm, 'dashboard')),
           quarterly: {
-            q1: oldSettings.sourceMappings.q1Status || '',
-            q2: oldSettings.sourceMappings.q2Status || '',
-            q3: oldSettings.sourceMappings.q3Status || '',
-            q4: oldSettings.sourceMappings.q4Status || '',
+            q1: str(get(sm, 'q1Status')),
+            q2: str(get(sm, 'q2Status')),
+            q3: str(get(sm, 'q3Status')),
+            q4: str(get(sm, 'q4Status')),
           },
-          blockers: oldSettings.sourceMappings.blockers || '',
-          roadmap: oldSettings.sourceMappings.roadmap || '',
-          betting: oldSettings.sourceMappings.betting || '',
-          features: oldSettings.sourceMappings.features || '',
-          playbook: oldSettings.sourceMappings.playbook || '',
+          blockers: str(get(sm, 'blockers')),
+          roadmap: str(get(sm, 'roadmap')),
+          betting: str(get(sm, 'betting')),
+          features: str(get(sm, 'features')),
+          playbook: str(get(sm, 'playbook')),
         };
       }
 
       // Migrate existing style settings
-      if (oldSettings.styling) {
+      const styling = oldSettings.styling;
+      if (styling && typeof styling === 'object') {
         baseConfig.style.colors = {
           ...baseConfig.style.colors,
-          headerBackground: oldSettings.styling.headerColor || baseConfig.style.colors.headerBackground,
-          subheaderBackground: oldSettings.styling.subheaderColor || baseConfig.style.colors.subheaderBackground,
+          headerBackground: str(get(styling, 'headerColor'), baseConfig.style.colors.headerBackground),
+          subheaderBackground: str(get(styling, 'subheaderColor'), baseConfig.style.colors.subheaderBackground),
         };
 
-        if (oldSettings.styling.priorityColors) {
+        const pc = get(styling, 'priorityColors');
+        if (pc && typeof pc === 'object') {
           baseConfig.style.colors.priority = {
-            p0: oldSettings.styling.priorityColors.p0 || baseConfig.style.colors.priority.p0,
-            p1: oldSettings.styling.priorityColors.p1 || baseConfig.style.colors.priority.p1,
-            p2: oldSettings.styling.priorityColors.p2 || baseConfig.style.colors.priority.p2,
+            p0: str(get(pc, 'p0'), baseConfig.style.colors.priority.p0),
+            p1: str(get(pc, 'p1'), baseConfig.style.colors.priority.p1),
+            p2: str(get(pc, 'p2'), baseConfig.style.colors.priority.p2),
           };
         }
 
-        if (oldSettings.styling.statusColors) {
+        const sc = get(styling, 'statusColors');
+        if (sc && typeof sc === 'object') {
           baseConfig.style.colors.status = {
-            completed: oldSettings.styling.statusColors.completed || baseConfig.style.colors.status.completed,
-            inProgress: oldSettings.styling.statusColors.inProgress || baseConfig.style.colors.status.inProgress,
-            pending: oldSettings.styling.statusColors.pending || baseConfig.style.colors.status.pending,
+            completed: str(get(sc, 'completed'), baseConfig.style.colors.status.completed),
+            inProgress: str(get(sc, 'inProgress'), baseConfig.style.colors.status.inProgress),
+            pending: str(get(sc, 'pending'), baseConfig.style.colors.status.pending),
           };
         }
       }
 
       // Migrate report configurations
-      if (oldSettings.reports) {
+      const reports = oldSettings.reports;
+      if (reports && typeof reports === 'object') {
         const reportKeys = ['weekly', 'quarterly', 'feature', 'blocker'] as const;
         for (const key of reportKeys) {
-          if (oldSettings.reports[key]) {
-            baseConfig.reports[key].enabled = oldSettings.reports[key].enabled ?? true;
-            if (oldSettings.reports[key].filename) {
-              baseConfig.reports[key].filename = oldSettings.reports[key].filename;
+          const rpt = get(reports, key);
+          if (rpt && typeof rpt === 'object') {
+            const enabled = get(rpt, 'enabled');
+            baseConfig.reports[key].enabled = typeof enabled === 'boolean' ? enabled : true;
+            const filename = get(rpt, 'filename');
+            if (typeof filename === 'string') {
+              baseConfig.reports[key].filename = filename;
             }
           }
         }
       }
 
       // Migrate advanced settings
-      if (oldSettings.advanced) {
+      const adv = oldSettings.advanced;
+      if (adv && typeof adv === 'object') {
         baseConfig.advanced = {
           ...baseConfig.advanced,
-          weekStartDay: oldSettings.advanced.weekStartDay ?? 1,
-          dateFormat: oldSettings.advanced.dateFormat || 'YYYY-MM-DD',
-          debugLogging: oldSettings.advanced.debugLogging ?? false,
-          logLevel: oldSettings.advanced.logLevel || 'INFO',
+          weekStartDay: get(adv, 'weekStartDay') === 0 ? 0 : 1,
+          dateFormat: str(get(adv, 'dateFormat'), 'YYYY-MM-DD'),
+          debugLogging: get(adv, 'debugLogging') === true,
+          logLevel: str(get(adv, 'logLevel'), 'INFO') as 'DEBUG' | 'INFO' | 'WARN' | 'ERROR',
         };
       }
     }

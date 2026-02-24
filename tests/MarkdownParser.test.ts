@@ -116,9 +116,9 @@ Content of section B`;
       const tasks = parser.extractTasks(content);
 
       expect(tasks).toHaveLength(3);
-      expect(tasks[0].status).toBe(true);
-      expect(tasks[1].status).toBe(false);
-      expect(tasks[2].status).toBe(true);
+      expect(tasks[0].status).toBe('completed');
+      expect(tasks[1].status).toBe('pending');
+      expect(tasks[2].status).toBe('completed');
     });
 
     it('should extract priority from emoji', () => {
@@ -196,12 +196,69 @@ Content of section B`;
       expect(p0Tasks).toHaveLength(2);
 
       // Filter by status
-      const completedTasks = parser.extractTasks(content, { status: true });
+      const completedTasks = parser.extractTasks(content, { status: 'completed' });
       expect(completedTasks).toHaveLength(1);
 
       // Combined filters
-      const incompletP0 = parser.extractTasks(content, { priority: 'P0', status: false });
+      const incompletP0 = parser.extractTasks(content, { priority: 'P0', status: 'pending' });
       expect(incompletP0).toHaveLength(1);
+    });
+
+    it('should recognize in_progress status indicators', () => {
+      const content = `
+- [/] Task with half-check checkbox
+- [ ] 🔄 Task with spinner emoji
+- [ ] WIP task in progress
+- [x] Completed task
+- [ ] Pending task
+`;
+
+      const tasks = parser.extractTasks(content);
+
+      expect(tasks).toHaveLength(5);
+      expect(tasks[0].status).toBe('in_progress');
+      expect(tasks[1].status).toBe('in_progress');
+      expect(tasks[2].status).toBe('in_progress');
+      expect(tasks[3].status).toBe('completed');
+      expect(tasks[4].status).toBe('pending');
+    });
+
+    it('should extract estimatedTime from task line', () => {
+      const content = `
+- [ ] Task with time estimate ⏱️ 2h
+- [ ] Another task estimate:: 30 minutes
+- [ ] Task without estimate
+`;
+
+      const tasks = parser.extractTasks(content);
+
+      expect(tasks[0].estimatedTime).toBe('2h');
+      expect(tasks[1].estimatedTime).toBe('30m');
+      expect(tasks[2].estimatedTime).toBeUndefined();
+    });
+
+    it('should clean estimatedTime patterns from content', () => {
+      const content = `
+- [ ] Actual task ⏱️ 2h #P0
+`;
+
+      const tasks = parser.extractTasks(content);
+
+      expect(tasks[0].content).not.toContain('⏱️');
+      expect(tasks[0].content).not.toContain('2h');
+      expect(tasks[0].estimatedTime).toBe('2h');
+    });
+
+    it('should parse tasks without priority as null priority', () => {
+      const content = `
+- [ ] Task without any priority
+- [ ] ⏫ P0 task
+`;
+
+      const tasks = parser.extractTasks(content);
+
+      expect(tasks[0].priority).toBeNull();
+      expect(tasks[1].priority).toBe('P0');
     });
   });
 

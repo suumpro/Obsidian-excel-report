@@ -2,7 +2,7 @@
  * Shared types and constants for parsers
  */
 
-import { Priority } from '../../types/models';
+import { Priority, TaskStatus } from '../../types/models';
 import { ParsingConfig } from '../../types/config';
 
 /**
@@ -10,7 +10,7 @@ import { ParsingConfig } from '../../types/config';
  */
 export interface TaskFilters {
   priority?: Priority;
-  status?: boolean;
+  status?: TaskStatus;
   tags?: string[];
 }
 

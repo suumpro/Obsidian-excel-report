@@ -15,13 +15,13 @@ export class TFile {
   path: string;
   basename: string;
   extension: string;
-  stat: { mtime: number };
+  stat: { mtime: number; size: number };
 
   constructor(path: string) {
     this.path = path;
     this.basename = path.split('/').pop()?.replace(/\.[^.]+$/, '') || '';
     this.extension = path.split('.').pop() || '';
-    this.stat = { mtime: Date.now() };
+    this.stat = { mtime: Date.now(), size: 0 };
   }
 }
 
@@ -35,12 +35,24 @@ export class TFolder {
   }
 }
 
+export class FileSystemAdapter {
+  getBasePath(): string {
+    return '/mock-vault';
+  }
+}
+
 export class Vault {
+  adapter: FileSystemAdapter = new FileSystemAdapter();
+
   getAbstractFileByPath(path: string): TFile | TFolder | null {
     return null;
   }
 
   async read(file: TFile): Promise<string> {
+    return '';
+  }
+
+  async cachedRead(file: TFile): Promise<string> {
     return '';
   }
 
@@ -54,8 +66,14 @@ export class Vault {
 
   async createFolder(path: string): Promise<void> {}
 
+  async modifyBinary(file: TFile, data: ArrayBuffer): Promise<void> {}
+
   getFiles(): TFile[] {
     return [];
+  }
+
+  static recurseChildren(root: TFolder, callback: (child: TFile | TFolder) => void): void {
+    // No-op in mock - tests override via jest.spyOn
   }
 }
 

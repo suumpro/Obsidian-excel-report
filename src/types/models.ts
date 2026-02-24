@@ -7,6 +7,11 @@
 import { Recurrence } from './parsing';
 
 /**
+ * Task status values
+ */
+export type TaskStatus = 'completed' | 'in_progress' | 'pending';
+
+/**
  * Priority levels matching Obsidian task patterns
  */
 export type Priority = 'P0' | 'P1' | 'P2';
@@ -43,8 +48,8 @@ export type BlockerStatus = '🔄 진행중' | '⚠️ 미해결' | '✅ 해결'
 export interface Task {
   /** Task description (cleaned of emojis and metadata) */
   content: string;
-  /** True if completed (checkbox is [x] or [X]) */
-  status: boolean;
+  /** Task status: completed, in_progress, or pending */
+  status: TaskStatus;
   /** Tags extracted from content (#tag-name) */
   tags: string[];
   /** Priority level (P0, P1, P2) extracted from emoji or tag */

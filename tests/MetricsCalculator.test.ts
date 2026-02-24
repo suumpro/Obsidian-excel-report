@@ -19,7 +19,7 @@ import {
 function createTask(overrides: Partial<Task> = {}): Task {
   return {
     content: 'Test task',
-    status: false,
+    status: 'pending',
     tags: [],
     priority: null,
     dueDate: null,
@@ -75,9 +75,9 @@ describe('MetricsCalculator', () => {
 
     it('should handle all completed tasks', () => {
       const tasks = [
-        createTask({ status: true }),
-        createTask({ status: true }),
-        createTask({ status: true }),
+        createTask({ status: 'completed' }),
+        createTask({ status: 'completed' }),
+        createTask({ status: 'completed' }),
       ];
       const result = MetricsCalculator.calculateTaskMetrics(tasks);
       expect(result).toEqual({
@@ -90,8 +90,8 @@ describe('MetricsCalculator', () => {
 
     it('should handle all pending tasks', () => {
       const tasks = [
-        createTask({ status: false }),
-        createTask({ status: false }),
+        createTask({ status: 'pending' }),
+        createTask({ status: 'pending' }),
       ];
       const result = MetricsCalculator.calculateTaskMetrics(tasks);
       expect(result).toEqual({
@@ -104,10 +104,10 @@ describe('MetricsCalculator', () => {
 
     it('should handle mixed tasks', () => {
       const tasks = [
-        createTask({ status: true }),
-        createTask({ status: false }),
-        createTask({ status: true }),
-        createTask({ status: false }),
+        createTask({ status: 'completed' }),
+        createTask({ status: 'pending' }),
+        createTask({ status: 'completed' }),
+        createTask({ status: 'pending' }),
       ];
       const result = MetricsCalculator.calculateTaskMetrics(tasks);
       expect(result).toEqual({
@@ -123,18 +123,18 @@ describe('MetricsCalculator', () => {
     it('should calculate metrics with P0/P1/P2 tasks', () => {
       const dashboard = emptyDashboardData();
       dashboard.p0Tasks = [
-        createTask({ status: true, priority: 'P0' }),
-        createTask({ status: false, priority: 'P0' }),
+        createTask({ status: 'completed', priority: 'P0' }),
+        createTask({ status: 'pending', priority: 'P0' }),
       ];
       dashboard.p1Tasks = [
-        createTask({ status: true, priority: 'P1' }),
-        createTask({ status: true, priority: 'P1' }),
-        createTask({ status: false, priority: 'P1' }),
+        createTask({ status: 'completed', priority: 'P1' }),
+        createTask({ status: 'completed', priority: 'P1' }),
+        createTask({ status: 'pending', priority: 'P1' }),
       ];
       dashboard.p2Tasks = [
-        createTask({ status: true, priority: 'P2' }),
-        createTask({ status: false, priority: 'P2' }),
-        createTask({ status: false, priority: 'P2' }),
+        createTask({ status: 'completed', priority: 'P2' }),
+        createTask({ status: 'pending', priority: 'P2' }),
+        createTask({ status: 'pending', priority: 'P2' }),
       ];
       dashboard.allTasks = [
         ...dashboard.p0Tasks,
@@ -259,14 +259,14 @@ describe('MetricsCalculator', () => {
       const quarterly = emptyQuarterlyData(1);
       quarterly.totalTasks = 6;
       quarterly.completedTasks = [
-        createTask({ status: true, priority: 'P0' }),
-        createTask({ status: true, priority: 'P1' }),
-        createTask({ status: true, priority: 'P1' }),
-        createTask({ status: true, priority: 'P2' }),
+        createTask({ status: 'completed', priority: 'P0' }),
+        createTask({ status: 'completed', priority: 'P1' }),
+        createTask({ status: 'completed', priority: 'P1' }),
+        createTask({ status: 'completed', priority: 'P2' }),
       ];
       quarterly.pendingTasks = [
-        createTask({ status: false, priority: 'P0' }),
-        createTask({ status: false, priority: 'P1' }),
+        createTask({ status: 'pending', priority: 'P0' }),
+        createTask({ status: 'pending', priority: 'P1' }),
       ];
       quarterly.p0Total = 2;
       quarterly.p0Completed = 1;
@@ -291,7 +291,7 @@ describe('MetricsCalculator', () => {
     it('should handle zero goals for priority level', () => {
       const quarterly = emptyQuarterlyData(1);
       quarterly.totalTasks = 1;
-      quarterly.completedTasks = [createTask({ status: true, priority: 'P0' })];
+      quarterly.completedTasks = [createTask({ status: 'completed', priority: 'P0' })];
       quarterly.p0Total = 1;
       quarterly.p0Completed = 1;
       quarterly.completionRate = 100;

@@ -14,7 +14,7 @@ export class MetricsCalculator {
    */
   static calculateTaskMetrics(tasks: Task[]): Partial<Metrics> {
     const total = tasks.length;
-    const completed = tasks.filter(t => t.status).length;
+    const completed = tasks.filter(t => t.status === 'completed').length;
     const pending = total - completed;
     const completionRate = total > 0 ? (completed / total) * 100 : 0;
 
@@ -38,7 +38,7 @@ export class MetricsCalculator {
     let overdueTasks = 0, thisWeekTasks = 0;
 
     for (const t of dashboard.allTasks) {
-      if (t.status) {
+      if (t.status === 'completed') {
         totalCompleted++;
         if (t.priority === 'P0') p0Completed++;
         else if (t.priority === 'P1') p1Completed++;

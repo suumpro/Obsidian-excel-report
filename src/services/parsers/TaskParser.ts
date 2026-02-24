@@ -2,7 +2,7 @@
  * Task extraction and parsing from markdown
  */
 
-import { Task, Priority } from '../../types/models';
+import { Task, Priority, TaskStatus } from '../../types/models';
 import { ParsingConfig } from '../../types/config';
 import { matchesAny } from '../../utils/configUtils';
 import { RegexCache } from '../../utils/RegexCache';
@@ -23,7 +23,7 @@ export class TaskParser {
    * Extract tasks from markdown content
    */
   extractTasks(content: string, filters?: TaskFilters): Task[] {
-    const taskPattern = /^(\s*-\s*\[([ xX])\])\s+(.+)$/gm;
+    const taskPattern = /^(\s*-\s*\[([ xX/])\])\s+(.+)$/gm;
     const tasks: Task[] = [];
     let match;
 
@@ -36,6 +36,8 @@ export class TaskParser {
         if (extensions.quarterTag) task.quarterTag = extensions.quarterTag;
         if (extensions.areaTag) task.areaTag = extensions.areaTag;
         if (extensions.startDate) task.startDate = new Date(extensions.startDate);
+        const estimatedTime = this.extractEstimatedTime(match[0]);
+        if (estimatedTime) task.estimatedTime = estimatedTime;
         tasks.push(task);
       }
     }
@@ -160,8 +162,12 @@ export class TaskParser {
   private parseTaskLine(rawLine: string, checkbox: string, contentPart: string): Task {
     const rules = this.parsingRules.task;
 
-    const isCompleted = checkbox.toLowerCase() === 'x' ||
-      matchesAny(rawLine, rules.statusIndicators.completed);
+    let taskStatus: TaskStatus = 'pending';
+    if (checkbox.toLowerCase() === 'x' || matchesAny(rawLine, rules.statusIndicators.completed)) {
+      taskStatus = 'completed';
+    } else if (checkbox === '/' || matchesAny(rawLine, rules.statusIndicators.inProgress)) {
+      taskStatus = 'in_progress';
+    }
 
     const tags = [...contentPart.matchAll(/#([\w/-]+)/g)].map(m => m[1]);
 
@@ -209,11 +215,13 @@ export class TaskParser {
       const regex = this.regexCache.get(pattern, 'g');
       if (regex) cleanContent = cleanContent.replace(regex, '');
     });
+    cleanContent = cleanContent.replace(/⏱️\s*\d+[hmd]/g, '');
+    cleanContent = cleanContent.replace(/estimate::\s*\d+\s*(?:hours?|mins?|minutes?|days?|[hmd])/gi, '');
     cleanContent = cleanContent.replace(/#[\w/-]+/g, '').trim();
 
     return {
       content: cleanContent,
-      status: isCompleted,
+      status: taskStatus,
       tags,
       priority,
       dueDate,

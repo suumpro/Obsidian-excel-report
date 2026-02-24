@@ -181,10 +181,10 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
     const tableData = data.p0Tasks.map((task, idx) => [
       `P0-${String(idx + 1).padStart(2, '0')}`,
       task.content,
-      task.status ? status.completed : status.inProgress,
+      task.status === 'completed' ? status.completed : task.status === 'in_progress' ? status.inProgress : status.pending,
       task.dueDate ? formatDate(task.dueDate, 'MM/DD') : '-',
       task.tags.join(', ') || '-',
-      task.status ? '100%' : '-',
+      task.status === 'completed' ? '100%' : '-',
     ]);
 
     row = this.addTable(ws, headers, tableData, row, 1, {
@@ -196,10 +196,10 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
     for (let i = 0; i < data.p0Tasks.length; i++) {
       const task = data.p0Tasks[i];
       const statusCell = ws.getCell(i + 4, 3); // row = header(3) + data row
-      sm.applyStatusStyle(statusCell, task.status ? status.completed : status.inProgress);
+      sm.applyStatusStyle(statusCell, task.status === 'completed' ? status.completed : task.status === 'in_progress' ? status.inProgress : status.pending);
 
       // Highlight overdue
-      if (!task.status && isOverdue(task.dueDate)) {
+      if (task.status !== 'completed' && isOverdue(task.dueDate)) {
         const dueDateCell = ws.getCell(i + 4, 4);
         dueDateCell.fill = {
           type: 'pattern',
@@ -247,10 +247,10 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
     const tableData = data.p1Tasks.map((task, idx) => [
       `P1-${String(idx + 1).padStart(2, '0')}`,
       task.content,
-      task.status ? status.completed : status.inProgress,
+      task.status === 'completed' ? status.completed : task.status === 'in_progress' ? status.inProgress : status.pending,
       task.dueDate ? formatDate(task.dueDate, 'MM/DD') : '-',
       task.tags.join(', ') || '-',
-      task.status ? '100%' : '-',
+      task.status === 'completed' ? '100%' : '-',
     ]);
 
     row = this.addTable(ws, headers, tableData, row, 1, {
@@ -262,10 +262,10 @@ export class QuarterlyReportGenerator extends ExcelGenerator {
     for (let i = 0; i < data.p1Tasks.length; i++) {
       const task = data.p1Tasks[i];
       const statusCell = ws.getCell(i + 4, 3);
-      sm.applyStatusStyle(statusCell, task.status ? status.completed : status.inProgress);
+      sm.applyStatusStyle(statusCell, task.status === 'completed' ? status.completed : task.status === 'in_progress' ? status.inProgress : status.pending);
 
       // Highlight overdue
-      if (!task.status && isOverdue(task.dueDate)) {
+      if (task.status !== 'completed' && isOverdue(task.dueDate)) {
         const dueDateCell = ws.getCell(i + 4, 4);
         dueDateCell.fill = {
           type: 'pattern',

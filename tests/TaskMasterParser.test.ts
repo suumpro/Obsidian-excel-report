@@ -127,7 +127,7 @@ Regular content without weekly breakdowns.
       const tasks = parser.extractTasks(line);
 
       expect(tasks).toHaveLength(1);
-      expect(tasks[0].status).toBe(true);
+      expect(tasks[0].status).toBe('completed');
       if (tasks[0].completedDate) {
         expect(tasks[0].completedDate).toBeInstanceOf(Date);
       }

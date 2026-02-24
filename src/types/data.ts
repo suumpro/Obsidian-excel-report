@@ -71,6 +71,8 @@ export interface DashboardData {
   p1Tasks: Task[];
   /** P2 (normal) priority tasks */
   p2Tasks: Task[];
+  /** Tasks without priority assignment */
+  unassignedTasks: Task[];
   /** All tasks combined */
   allTasks: Task[];
   /** Frontmatter metadata */
@@ -131,6 +133,8 @@ export interface QuarterlyData {
   p1Tasks: Task[];
   /** P2 tasks for this quarter */
   p2Tasks: Task[];
+  /** Tasks without priority assignment */
+  unassignedTasks: Task[];
   /** Completed tasks */
   completedTasks: Task[];
   /** Pending tasks */
@@ -215,6 +219,7 @@ export function emptyDashboardData(): DashboardData {
     p0Tasks: [],
     p1Tasks: [],
     p2Tasks: [],
+    unassignedTasks: [],
     allTasks: [],
     metadata: {},
     coordination: [],
@@ -260,6 +265,7 @@ export function emptyQuarterlyData(quarter: number): QuarterlyData {
     p0Tasks: [],
     p1Tasks: [],
     p2Tasks: [],
+    unassignedTasks: [],
     completedTasks: [],
     pendingTasks: [],
     totalTasks: 0,

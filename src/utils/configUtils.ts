@@ -7,6 +7,9 @@ import {
   PluginConfig,
   ConfigValidationResult,
   LocaleCode,
+  LocaleStrings,
+  ParsingConfig,
+  StyleConfig,
 } from '../types/config';
 
 /**
@@ -114,11 +117,11 @@ function isValidLocale(locale: string): locale is LocaleCode {
 }
 
 function validateLocaleStrings(
-  strings: any,
+  strings: Partial<LocaleStrings>,
   errors: string[],
   warnings: string[]
 ): void {
-  const requiredSections = ['reports', 'sheets', 'columns', 'kpi', 'status', 'priority'];
+  const requiredSections: (keyof LocaleStrings)[] = ['reports', 'sheets', 'columns', 'kpi', 'status', 'priority'];
 
   for (const section of requiredSections) {
     if (!strings[section]) {
@@ -128,7 +131,7 @@ function validateLocaleStrings(
 
   // Check specific required fields
   if (strings.sheets) {
-    const requiredSheets = ['weeklySummary', 'roadmapProgress', 'taskDetails'];
+    const requiredSheets: (keyof LocaleStrings['sheets'])[] = ['weeklySummary', 'roadmapProgress', 'taskDetails'];
     for (const sheet of requiredSheets) {
       if (!strings.sheets[sheet]) {
         warnings.push(`Missing sheet name: ${sheet}`);
@@ -138,7 +141,7 @@ function validateLocaleStrings(
 }
 
 function validateParsingConfig(
-  parsing: any,
+  parsing: Partial<ParsingConfig>,
   errors: string[],
   warnings: string[]
 ): void {
@@ -163,17 +166,17 @@ function validateParsingConfig(
 }
 
 function validateStyleConfig(
-  style: any,
+  style: Partial<StyleConfig>,
   errors: string[],
   _warnings: string[]
 ): void {
   if (style.colors) {
-    // Validate hex colors
-    const colorFields = ['headerBackground', 'subheaderBackground'];
-    for (const field of colorFields) {
-      if (style.colors[field] && !isValidHexColor(style.colors[field])) {
-        errors.push(`Invalid hex color for ${field}: ${style.colors[field]}`);
-      }
+    const { headerBackground, subheaderBackground } = style.colors;
+    if (headerBackground && !isValidHexColor(headerBackground)) {
+      errors.push(`Invalid hex color for headerBackground: ${headerBackground}`);
+    }
+    if (subheaderBackground && !isValidHexColor(subheaderBackground)) {
+      errors.push(`Invalid hex color for subheaderBackground: ${subheaderBackground}`);
     }
   }
 }

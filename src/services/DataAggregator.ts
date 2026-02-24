@@ -137,13 +137,15 @@ export class DataAggregator {
       const p0Tasks: typeof allTasks = [];
       const p1Tasks: typeof allTasks = [];
       const p2Tasks: typeof allTasks = [];
+      const unassignedTasks: typeof allTasks = [];
       for (const t of allTasks) {
         if (t.priority === 'P0') p0Tasks.push(t);
         else if (t.priority === 'P1') p1Tasks.push(t);
         else if (t.priority === 'P2') p2Tasks.push(t);
+        else unassignedTasks.push(t);
       }
 
-      logger.debug(`Loaded dashboard: ${allTasks.length} tasks (P0: ${p0Tasks.length}, P1: ${p1Tasks.length}, P2: ${p2Tasks.length})`);
+      logger.debug(`Loaded dashboard: ${allTasks.length} tasks (P0: ${p0Tasks.length}, P1: ${p1Tasks.length}, P2: ${p2Tasks.length}, unassigned: ${unassignedTasks.length})`);
 
       // Parse extended data (coordination, milestones, playbook)
       const coordination = this.parser.parseCoordination(body);
@@ -159,6 +161,7 @@ export class DataAggregator {
         p0Tasks,
         p1Tasks,
         p2Tasks,
+        unassignedTasks,
         allTasks,
         metadata,
         coordination,
@@ -224,16 +227,29 @@ export class DataAggregator {
       const p0Tasks: typeof allTasks = [];
       const p1Tasks: typeof allTasks = [];
       const p2Tasks: typeof allTasks = [];
+      const unassignedTasks: typeof allTasks = [];
       const completed: typeof allTasks = [];
       const pending: typeof allTasks = [];
-      let p0Completed = 0;
-      let p1Completed = 0;
-      let p2Completed = 0;
+      let p0Completed = 0, p0InProgress = 0;
+      let p1Completed = 0, p1InProgress = 0;
+      let p2Completed = 0, p2InProgress = 0;
       for (const t of allTasks) {
-        if (t.priority === 'P0') { p0Tasks.push(t); if (t.status) p0Completed++; }
-        else if (t.priority === 'P1') { p1Tasks.push(t); if (t.status) p1Completed++; }
-        else if (t.priority === 'P2') { p2Tasks.push(t); if (t.status) p2Completed++; }
-        if (t.status) completed.push(t); else pending.push(t);
+        if (t.priority === 'P0') {
+          p0Tasks.push(t);
+          if (t.status === 'completed') p0Completed++;
+          else if (t.status === 'in_progress') p0InProgress++;
+        } else if (t.priority === 'P1') {
+          p1Tasks.push(t);
+          if (t.status === 'completed') p1Completed++;
+          else if (t.status === 'in_progress') p1InProgress++;
+        } else if (t.priority === 'P2') {
+          p2Tasks.push(t);
+          if (t.status === 'completed') p2Completed++;
+          else if (t.status === 'in_progress') p2InProgress++;
+        } else {
+          unassignedTasks.push(t);
+        }
+        if (t.status === 'completed') completed.push(t); else pending.push(t);
       }
       const total = allTasks.length;
       const completionRate = total > 0 ? (completed.length / total) * 100 : 0;
@@ -245,22 +261,23 @@ export class DataAggregator {
         p0Tasks,
         p1Tasks,
         p2Tasks,
+        unassignedTasks,
         completedTasks: completed,
         pendingTasks: pending,
         totalTasks: total,
         completionRate,
         p0Total: p0Tasks.length,
         p0Completed,
-        p0InProgress: 0,
-        p0Pending: p0Tasks.length - p0Completed,
+        p0InProgress,
+        p0Pending: p0Tasks.length - p0Completed - p0InProgress,
         p1Total: p1Tasks.length,
         p1Completed,
-        p1InProgress: 0,
-        p1Pending: p1Tasks.length - p1Completed,
+        p1InProgress,
+        p1Pending: p1Tasks.length - p1Completed - p1InProgress,
         p2Total: p2Tasks.length,
         p2Completed,
-        p2InProgress: 0,
-        p2Pending: p2Tasks.length - p2Completed,
+        p2InProgress,
+        p2Pending: p2Tasks.length - p2Completed - p2InProgress,
       };
 
       // Cache the result
@@ -677,10 +694,12 @@ export class DataAggregator {
     const p0Tasks: typeof allTasks = [];
     const p1Tasks: typeof allTasks = [];
     const p2Tasks: typeof allTasks = [];
+    const unassignedTasks: typeof allTasks = [];
     for (const t of allTasks) {
       if (t.priority === 'P0') p0Tasks.push(t);
       else if (t.priority === 'P1') p1Tasks.push(t);
       else if (t.priority === 'P2') p2Tasks.push(t);
+      else unassignedTasks.push(t);
     }
 
     const now = new Date();
@@ -693,6 +712,7 @@ export class DataAggregator {
       p0Tasks,
       p1Tasks,
       p2Tasks,
+      unassignedTasks,
       allTasks,
       metadata: { scanMode: true, scannedFiles: scan.scannedFiles },
       coordination: [],
@@ -746,16 +766,29 @@ export class DataAggregator {
     const p0Tasks: typeof allTasks = [];
     const p1Tasks: typeof allTasks = [];
     const p2Tasks: typeof allTasks = [];
+    const unassignedTasks: typeof allTasks = [];
     const completed: typeof allTasks = [];
     const pending: typeof allTasks = [];
-    let p0Completed = 0;
-    let p1Completed = 0;
-    let p2Completed = 0;
+    let p0Completed = 0, p0InProgress = 0;
+    let p1Completed = 0, p1InProgress = 0;
+    let p2Completed = 0, p2InProgress = 0;
     for (const t of allTasks) {
-      if (t.priority === 'P0') { p0Tasks.push(t); if (t.status) p0Completed++; }
-      else if (t.priority === 'P1') { p1Tasks.push(t); if (t.status) p1Completed++; }
-      else if (t.priority === 'P2') { p2Tasks.push(t); if (t.status) p2Completed++; }
-      if (t.status) completed.push(t); else pending.push(t);
+      if (t.priority === 'P0') {
+        p0Tasks.push(t);
+        if (t.status === 'completed') p0Completed++;
+        else if (t.status === 'in_progress') p0InProgress++;
+      } else if (t.priority === 'P1') {
+        p1Tasks.push(t);
+        if (t.status === 'completed') p1Completed++;
+        else if (t.status === 'in_progress') p1InProgress++;
+      } else if (t.priority === 'P2') {
+        p2Tasks.push(t);
+        if (t.status === 'completed') p2Completed++;
+        else if (t.status === 'in_progress') p2InProgress++;
+      } else {
+        unassignedTasks.push(t);
+      }
+      if (t.status === 'completed') completed.push(t); else pending.push(t);
     }
     const total = allTasks.length;
     const completionRate = total > 0 ? (completed.length / total) * 100 : 0;
@@ -765,22 +798,23 @@ export class DataAggregator {
       p0Tasks,
       p1Tasks,
       p2Tasks,
+      unassignedTasks,
       completedTasks: completed,
       pendingTasks: pending,
       totalTasks: total,
       completionRate,
       p0Total: p0Tasks.length,
       p0Completed,
-      p0InProgress: 0,
-      p0Pending: p0Tasks.length - p0Completed,
+      p0InProgress,
+      p0Pending: p0Tasks.length - p0Completed - p0InProgress,
       p1Total: p1Tasks.length,
       p1Completed,
-      p1InProgress: 0,
-      p1Pending: p1Tasks.length - p1Completed,
+      p1InProgress,
+      p1Pending: p1Tasks.length - p1Completed - p1InProgress,
       p2Total: p2Tasks.length,
       p2Completed,
-      p2InProgress: 0,
-      p2Pending: p2Tasks.length - p2Completed,
+      p2InProgress,
+      p2Pending: p2Tasks.length - p2Completed - p2InProgress,
     };
   }
 

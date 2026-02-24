@@ -8,7 +8,7 @@ This Obsidian plugin automatically converts your markdown task management files 
 
 > [한국어 문서 (Korean Documentation)](README_KO.md)
 
-**Version**: 3.1.0
+**Version**: 4.0.0
 **Author**: Jamin Park
 **License**: MIT
 **Platform**: Desktop only (ExcelJS requires Node.js APIs)
@@ -16,13 +16,19 @@ This Obsidian plugin automatically converts your markdown task management files 
 ## Features
 
 - **4 Report Types**: Weekly (9 sheets), Quarterly (6 sheets), Feature Progress (3 sheets), Blocker Tracking (2 sheets)
-- **Multi-language Support**: English, Korean, Japanese, and custom presets
+- **Multi-language Support**: 5 presets — Universal (default), English, Korean, Japanese, Minimal
+- **Setup Wizard**: First-run guided setup for source file paths
+- **Path Validation**: Validates source files before report generation
+- **Folder Scan Mode**: Auto-discover markdown files from configured folders
+- **3-State Task Tracking**: `[ ]` pending, `[/]` in progress, `[x]` completed
+- **Dynamic Filename Templates**: Placeholders like `{project}`, `{year}`, `{quarter}`, `{week}`, `{date}`
 - **One-Click Generation**: Generate reports via command palette or ribbon icon
 - **Auto-Detection**: Automatically detects current week/quarter
 - **Task Master Integration**: Q1-Q4 quarterly task data aggregation
 - **Customer Request Tracking**: Dedicated sheets for customer request status
 - **Executive Summary**: KPI dashboard with completion rates and trend analysis
 - **Dataview Field Support**: Parse `field:: value` inline fields
+- **Time Estimates & Start Dates**: `⏱️ 2h` or `estimate:: 3 hours`; `🛠️ 2026-03-01` start dates
 - **Customizable**: Configure parsing rules, styling, and report structure
 - **Output Routing**: Automatic subfolder routing per report type
 - **Professional Formatting**: Colors, conditional formatting, auto column widths
@@ -88,12 +94,14 @@ Open Obsidian Settings > **Excel Automation** and set up your source files:
 
 | Setting | Description | Example |
 |---------|-------------|---------|
-| Base Path | Root folder for all source files | `02. Area/Work/PROJECT` |
+| Base Path | Root folder for all source files | `Projects/MyProject` |
 | Output Directory | Where Excel files will be saved | `Reports/Excel` |
-| Dashboard File | PM Dashboard markdown file | `00_Dashboard/SA_Dashboard.md` |
-| Blockers File | Blockers tracker markdown file | `03_Issues/Blockers.md` |
-| Task Master Files | Q1-Q4 task master files | `JIRA/Q1_TaskMaster.md` |
-| Customer Requests | Customer request tracking file | `JIRA/CustomerRequests.md` |
+| Dashboard File | PM Dashboard markdown file | `Dashboard/PM_Dashboard.md` |
+| Blockers File | Blockers tracker markdown file | `Issues/Blockers.md` |
+| Task Master Files | Q1-Q4 task master files | `Tasks/Q1_TaskMaster.md` |
+| Customer Requests | Customer request tracking file | `Requests/CustomerRequests.md` |
+
+> **Tip**: Run the **Setup Wizard** command (`Cmd/Ctrl + P` → "Open Setup Wizard") for guided first-time configuration.
 
 ### 2. Generate Your First Report
 
@@ -127,6 +135,8 @@ Access these via Command Palette (`Cmd/Ctrl + P`):
 | **Generate Feature Progress Report** | Creates 3-sheet report with all features, by priority, by cycle |
 | **Generate Blocker Tracking Report** | Creates 2-sheet report with active blockers and history |
 | **Generate All Enabled Reports** | Generates all report types that are enabled in settings |
+| **Open Setup Wizard** | Guided setup for source file paths and language preset |
+| **Validate Source File Paths** | Check that all configured source files exist |
 
 ---
 
@@ -182,6 +192,7 @@ The plugin supports multiple languages with built-in presets:
 
 | Preset | Language | Description |
 |--------|----------|-------------|
+| Universal | English | Language-neutral default with standard parsing (default) |
 | Korean | 한국어 | Full Korean labels and parsing rules |
 | English | English | English labels with standard parsing |
 | Japanese | 日本語 | Japanese labels with localized parsing |
@@ -228,6 +239,8 @@ Settings > Excel Automation > Reports
 | Enable Blocker Report | ON | Generate blocker tracking report |
 
 **Filename Placeholders:**
+- `{project}` - Project name from Base Path
+- `{year}` - Current year (YYYY)
 - `{week}` - Week number (01-52)
 - `{quarter}` - Quarter number (1-4)
 - `{date}` - Date in YYYYMMDD format
@@ -279,6 +292,11 @@ Use standard markdown checkboxes with optional priority indicators:
 - [ ] 🔽 P2 Normal task
 - [ ] [P0] Critical using tag
 - [ ] #P1 High priority using hashtag
+
+## Time Estimates and Start Dates
+- [ ] Task with estimate ⏱️ 2h
+- [ ] Task estimate:: 3 hours
+- [ ] Task with start date 🛫 2026-03-01
 ```
 
 ### Features
@@ -473,6 +491,21 @@ await plugin.generateBlockerReport();
 ---
 
 ## Changelog
+
+### v4.0.0 (2026-02-24)
+- **Universal Default Preset**: Language-neutral preset as default; removed all hardcoded project paths
+- **Multi-language Status Matching**: Centralized `statusUtils.ts` for EN/KO/JA status recognition
+- **Locale Strings in All Reports**: Reports fully driven by locale strings (186→10 Korean strings remaining)
+- **Dynamic Filename Templates**: `{project}`, `{year}`, `{quarter}`, `{week}`, `{date}` placeholders via `pathUtils.ts`
+- **Setup Wizard**: `SetupWizardModal` with `FolderSuggest`/`FileSuggest` for first-run guided setup
+- **Path Validation**: `PathValidator` checks required/optional source files before report generation
+- **3-State Task Tracking**: `TaskStatus` type with `completed`, `in_progress`, `pending`; `[/]` checkbox support
+- **Unassigned Tasks Bucket**: Tasks without priority are collected separately
+- **Time Estimates & Start Dates**: `⏱️ 2h`, `estimate:: 3 hours`, `🛫 2026-03-01` extraction
+- **Folder Scan Mode**: `VaultScanner` discovers markdown files from configured folders
+- **MarkdownParser Decomposition**: Refactored into 6 specialized sub-parsers + facade
+- **TypeScript Strict Mode**: Full strict mode with all `as any` casts eliminated
+- **324 tests** across 17 suites, 88% statement coverage
 
 ### v3.1.0 (2026-02-06)
 - **Task Master Integration**: Q1-Q4 Task Master file parsing with Mermaid Gantt support

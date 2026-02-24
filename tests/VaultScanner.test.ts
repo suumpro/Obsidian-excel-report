@@ -27,7 +27,7 @@ describe('VaultScanner', () => {
 
   const createTask = (content: string, overrides?: Partial<Task>): Task => ({
     content,
-    status: false,
+    status: 'pending',
     tags: [],
     priority: null,
     dueDate: null,
